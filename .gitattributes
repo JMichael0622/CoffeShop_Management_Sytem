@@ -1,0 +1,5 @@
+# Shell script must keep Unix line endings; Windows batch file keeps Windows ones.
+gradlew text eol=lf
+*.bat text eol=crlf
+*.jar binary
+*.webp binary
