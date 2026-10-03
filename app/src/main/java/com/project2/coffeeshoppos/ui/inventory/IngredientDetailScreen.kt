@@ -18,21 +18,16 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -56,6 +51,7 @@ import com.project2.coffeeshoppos.domain.formatUnitCost
 import com.project2.coffeeshoppos.domain.stockValueCentavos
 import com.project2.coffeeshoppos.ui.AppViewModelProvider
 import com.project2.coffeeshoppos.ui.components.CoffeeCard
+import com.project2.coffeeshoppos.ui.components.DatePickDialog
 import com.project2.coffeeshoppos.ui.components.EmptyState
 import com.project2.coffeeshoppos.ui.components.FormDialog
 import com.project2.coffeeshoppos.ui.components.InfoBanner
@@ -63,10 +59,8 @@ import com.project2.coffeeshoppos.ui.components.MessageEffect
 import com.project2.coffeeshoppos.ui.components.SectionHeader
 import com.project2.coffeeshoppos.ui.components.SubScreenScaffold
 import com.project2.coffeeshoppos.util.formatPeso
-import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -260,7 +254,6 @@ private fun MovementRow(movement: InventoryMovementEntity, ingredient: Ingredien
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun StockDialog(
     dialog: StockDialogState,
@@ -332,29 +325,12 @@ private fun StockDialog(
     }
 
     if (pickingDate) {
-        // The date picker works in UTC midnight milliseconds.
-        val todayMillis = today.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
-        val pickerState = rememberDatePickerState(
-            initialSelectedDateMillis = dialog.purchasedOn.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
-            selectableDates = object : SelectableDates {
-                override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis <= todayMillis
-                override fun isSelectableYear(year: Int) = year <= today.year
-            }
+        DatePickDialog(
+            initial = dialog.purchasedOn,
+            latest = today,
+            onPick = viewModel::onDateChange,
+            onDismiss = { pickingDate = false }
         )
-        DatePickerDialog(
-            onDismissRequest = { pickingDate = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    pickerState.selectedDateMillis?.let {
-                        viewModel.onDateChange(Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate())
-                    }
-                    pickingDate = false
-                }) { Text("OK") }
-            },
-            dismissButton = { TextButton(onClick = { pickingDate = false }) { Text("Cancel") } }
-        ) {
-            DatePicker(state = pickerState)
-        }
     }
 }
 

@@ -38,6 +38,11 @@ import kotlinx.serialization.Serializable
 @Serializable object OrdersRoute
 @Serializable data class OrderDetailRoute(val orderId: Long)
 
+// Expenses (Phase 6)
+/** Expense editor. expenseId = 0 records a new one; templateId fills it from a recurring expense. */
+@Serializable data class ExpenseEditRoute(val expenseId: Long = 0L, val templateId: Long = 0L)
+@Serializable object RecurringExpensesRoute
+
 /** The five tabs in the bottom navigation bar. */
 enum class TopLevelDestination(
     val route: Any,
@@ -67,7 +72,7 @@ enum class TopLevelDestination(
         route = ExpensesRoute,
         label = "Expenses",
         icon = R.drawable.ic_nav_expenses,
-        comingSoonMessage = "Recording and reviewing operating expenses arrives in Phase 6."
+        comingSoonMessage = ""
     ),
     Reports(
         route = ReportsRoute,

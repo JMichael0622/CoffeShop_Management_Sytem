@@ -21,6 +21,6 @@ class AppContainer(context: Context) {
     val catalogRepository by lazy { CatalogRepository(database, auditRepository, clock) }
     val inventoryRepository by lazy { InventoryRepository(database, auditRepository, clock) }
     val orderRepository by lazy { OrderRepository(database, inventoryRepository, auditRepository, clock) }
-    val expenseRepository by lazy { ExpenseRepository(database) }
+    val expenseRepository by lazy { ExpenseRepository(database, auditRepository, clock) }
     val auditRepository by lazy { AuditRepository(database, clock) }
 }

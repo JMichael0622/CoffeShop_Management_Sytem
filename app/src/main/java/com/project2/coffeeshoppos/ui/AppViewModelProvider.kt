@@ -7,6 +7,9 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.project2.coffeeshoppos.AppContainer
 import com.project2.coffeeshoppos.CoffeeShopApplication
+import com.project2.coffeeshoppos.ui.expenses.ExpenseEditViewModel
+import com.project2.coffeeshoppos.ui.expenses.ExpensesViewModel
+import com.project2.coffeeshoppos.ui.expenses.RecurringExpensesViewModel
 import com.project2.coffeeshoppos.ui.inventory.IngredientDetailViewModel
 import com.project2.coffeeshoppos.ui.inventory.IngredientEditViewModel
 import com.project2.coffeeshoppos.ui.inventory.InventoryViewModel
@@ -58,6 +61,15 @@ object AppViewModelProvider {
             OrdersViewModel(container.orderRepository, container.clock)
         }
         initializer { OrderDetailViewModel(createSavedStateHandle(), appContainer().orderRepository) }
+        initializer {
+            val container = appContainer()
+            ExpensesViewModel(container.expenseRepository, container.clock)
+        }
+        initializer {
+            val container = appContainer()
+            ExpenseEditViewModel(createSavedStateHandle(), container.expenseRepository, container.clock)
+        }
+        initializer { RecurringExpensesViewModel(appContainer().expenseRepository) }
     }
 }
 
