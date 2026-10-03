@@ -8,6 +8,8 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.project2.coffeeshoppos.AppContainer
 import com.project2.coffeeshoppos.CoffeeShopApplication
 import com.project2.coffeeshoppos.ui.dashboard.DashboardViewModel
+import com.project2.coffeeshoppos.ui.data.BackupViewModel
+import com.project2.coffeeshoppos.ui.data.ExportViewModel
 import com.project2.coffeeshoppos.ui.expenses.ExpenseEditViewModel
 import com.project2.coffeeshoppos.ui.expenses.ExpensesViewModel
 import com.project2.coffeeshoppos.ui.expenses.RecurringExpensesViewModel
@@ -73,6 +75,11 @@ object AppViewModelProvider {
         }
         initializer { RecurringExpensesViewModel(appContainer().expenseRepository) }
         initializer { ReportsViewModel(appContainer().reportRepository) }
+        initializer {
+            val container = appContainer()
+            ExportViewModel(container.exportRepository, container.reportRepository)
+        }
+        initializer { BackupViewModel(appContainer().backupManager) }
         initializer {
             val container = appContainer()
             DashboardViewModel(container.reportRepository, container.inventoryRepository, container.orderRepository)

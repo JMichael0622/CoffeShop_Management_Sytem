@@ -9,6 +9,7 @@ import androidx.room.migration.Migration
 import com.project2.coffeeshoppos.data.local.dao.AuditDao
 import com.project2.coffeeshoppos.data.local.dao.CatalogDao
 import com.project2.coffeeshoppos.data.local.dao.ExpenseDao
+import com.project2.coffeeshoppos.data.local.dao.ExportDao
 import com.project2.coffeeshoppos.data.local.dao.InventoryDao
 import com.project2.coffeeshoppos.data.local.dao.OrderDao
 import com.project2.coffeeshoppos.data.local.dao.ReportDao
@@ -70,6 +71,7 @@ abstract class CoffeeShopDatabase : RoomDatabase() {
     abstract fun expenseDao(): ExpenseDao
     abstract fun auditDao(): AuditDao
     abstract fun reportDao(): ReportDao
+    abstract fun exportDao(): ExportDao
 
     companion object {
         const val VERSION = 1

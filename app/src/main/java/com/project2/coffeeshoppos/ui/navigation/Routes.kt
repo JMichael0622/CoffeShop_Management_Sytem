@@ -43,6 +43,10 @@ import kotlinx.serialization.Serializable
 @Serializable data class ExpenseEditRoute(val expenseId: Long = 0L, val templateId: Long = 0L)
 @Serializable object RecurringExpensesRoute
 
+// Data (Phase 8)
+@Serializable object ExportRoute
+@Serializable object BackupRoute
+
 /** The five tabs in the bottom navigation bar. */
 enum class TopLevelDestination(
     val route: Any,

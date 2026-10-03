@@ -36,7 +36,6 @@ import com.project2.coffeeshoppos.ui.AppViewModelProvider
 import com.project2.coffeeshoppos.ui.components.CoffeeCard
 import com.project2.coffeeshoppos.ui.components.IconBadge
 import com.project2.coffeeshoppos.ui.components.SectionHeader
-import com.project2.coffeeshoppos.ui.components.StatusChip
 import com.project2.coffeeshoppos.ui.theme.CoffeeShopPOSTheme
 
 /** Hub for everything that is not a daily task: menu setup, backups, security. */
@@ -46,6 +45,8 @@ fun ManageScreen(
     onOpenMenu: () -> Unit,
     onOpenAddOns: () -> Unit,
     onOpenRecipes: () -> Unit,
+    onOpenExport: () -> Unit,
+    onOpenBackup: () -> Unit,
     viewModel: ManageViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val status by viewModel.databaseStatus.collectAsStateWithLifecycle()
@@ -59,21 +60,19 @@ fun ManageScreen(
     val inventoryItems = listOf(
         ManageItem("Recipes", "Ingredients used by each product", R.drawable.ic_nav_inventory, onClick = onOpenRecipes),
     )
-    ManageContent(status = status, menuItems = menuItems, inventoryItems = inventoryItems, onBack = onBack)
+    val dataItems = listOf(
+        ManageItem("Export reports", "Save CSV or PDF files", R.drawable.ic_nav_reports, onClick = onOpenExport),
+        ManageItem("Backup & restore", "Save a copy of all shop data", R.drawable.ic_receipt, onClick = onOpenBackup),
+    )
+    ManageContent(status = status, menuItems = menuItems, inventoryItems = inventoryItems, dataItems = dataItems, onBack = onBack)
 }
 
-/** A row in the hub. Rows without [onClick] are not built yet and show [availableIn] instead. */
+/** A row in the hub. */
 private data class ManageItem(
     val title: String,
     val subtitle: String,
     @param:DrawableRes val icon: Int,
-    val availableIn: String = "",
-    val onClick: (() -> Unit)? = null,
-)
-
-private val dataItems = listOf(
-    ManageItem("Export reports", "Save CSV or PDF files", R.drawable.ic_nav_reports, "Phase 8"),
-    ManageItem("Backup & restore", "Save a copy of all shop data", R.drawable.ic_receipt, "Phase 8"),
+    val onClick: () -> Unit,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -82,6 +81,7 @@ private fun ManageContent(
     status: DatabaseStatus,
     menuItems: List<ManageItem>,
     inventoryItems: List<ManageItem>,
+    dataItems: List<ManageItem>,
     onBack: () -> Unit,
 ) {
     Scaffold(
@@ -128,7 +128,7 @@ private fun ManageGroup(items: List<ManageItem>) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .then(if (item.onClick != null) Modifier.clickable(onClick = item.onClick) else Modifier)
+                        .clickable(onClick = item.onClick)
                         .heightIn(min = 64.dp)
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -143,16 +143,11 @@ private fun ManageGroup(items: List<ManageItem>) {
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    if (item.onClick != null) {
-                        Icon(
-                            painterResource(R.drawable.ic_chevron_right),
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    } else {
-                        // Not built yet, so the row is not clickable and says when it arrives.
-                        StatusChip(item.availableIn)
-                    }
+                    Icon(
+                        painterResource(R.drawable.ic_chevron_right),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
@@ -220,6 +215,7 @@ private fun ManageContentPreview() {
             status = DatabaseStatus.Ready(1, products = 0, ingredients = 0, orders = 0, expenses = 0),
             menuItems = listOf(ManageItem("Products & categories", "Menu items", R.drawable.ic_cafe, onClick = {})),
             inventoryItems = listOf(ManageItem("Recipes", "Ingredients", R.drawable.ic_nav_inventory, onClick = {})),
+            dataItems = listOf(ManageItem("Backup & restore", "Save a copy", R.drawable.ic_receipt, onClick = {})),
             onBack = {}
         )
     }

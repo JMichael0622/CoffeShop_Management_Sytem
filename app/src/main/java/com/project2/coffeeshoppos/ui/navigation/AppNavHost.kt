@@ -8,6 +8,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.project2.coffeeshoppos.domain.RecipeTarget
 import com.project2.coffeeshoppos.ui.dashboard.DashboardScreen
+import com.project2.coffeeshoppos.ui.data.BackupScreen
+import com.project2.coffeeshoppos.ui.data.ExportScreen
 import com.project2.coffeeshoppos.ui.expenses.ExpenseEditScreen
 import com.project2.coffeeshoppos.ui.expenses.ExpensesScreen
 import com.project2.coffeeshoppos.ui.expenses.RecurringExpensesScreen
@@ -79,7 +81,9 @@ fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) 
                 onBack = { navController.popBackStack() },
                 onOpenMenu = { navController.navigate(MenuRoute) },
                 onOpenAddOns = { navController.navigate(AddOnsRoute) },
-                onOpenRecipes = { navController.navigate(RecipesRoute) }
+                onOpenRecipes = { navController.navigate(RecipesRoute) },
+                onOpenExport = { navController.navigate(ExportRoute) },
+                onOpenBackup = { navController.navigate(BackupRoute) }
             )
         }
         composable<MenuRoute> {
@@ -129,6 +133,8 @@ fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) 
         composable<OrderDetailRoute> { OrderDetailScreen(onBack = { navController.popBackStack() }) }
         composable<ExpenseEditRoute> { ExpenseEditScreen(onClose = { navController.popBackStack() }) }
         composable<RecurringExpensesRoute> { RecurringExpensesScreen(onBack = { navController.popBackStack() }) }
+        composable<ExportRoute> { ExportScreen(onBack = { navController.popBackStack() }) }
+        composable<BackupRoute> { BackupScreen(onBack = { navController.popBackStack() }) }
     }
 }
 
