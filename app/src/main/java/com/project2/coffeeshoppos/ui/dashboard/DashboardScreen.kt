@@ -29,10 +29,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.clickable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.project2.coffeeshoppos.R
+import com.project2.coffeeshoppos.ui.AppViewModelProvider
 import com.project2.coffeeshoppos.ui.components.CoffeeCard
 import com.project2.coffeeshoppos.ui.components.EmptyState
-import com.project2.coffeeshoppos.ui.components.InfoBanner
 import com.project2.coffeeshoppos.ui.components.MetricCard
 import com.project2.coffeeshoppos.ui.components.SectionHeader
 import com.project2.coffeeshoppos.ui.theme.CoffeeShopPOSTheme
@@ -53,8 +57,29 @@ fun DashboardScreen(
     onAddStock: () -> Unit,
     onRecordExpense: () -> Unit,
     onOpenManage: () -> Unit,
+    onOpenOrder: (Long) -> Unit,
+    viewModel: DashboardViewModel = viewModel(factory = AppViewModelProvider.Factory),
+) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    DashboardContent(
+        state = state,
+        onNewOrder = onNewOrder,
+        onAddStock = onAddStock,
+        onRecordExpense = onRecordExpense,
+        onOpenManage = onOpenManage,
+        onOpenOrder = onOpenOrder
+    )
+}
+
+@Composable
+private fun DashboardContent(
+    state: DashboardUiState,
+    onNewOrder: () -> Unit,
+    onAddStock: () -> Unit,
+    onRecordExpense: () -> Unit,
+    onOpenManage: () -> Unit,
+    onOpenOrder: (Long) -> Unit,
     modifier: Modifier = Modifier,
-    state: DashboardUiState = DashboardUiState(),
 ) {
     LazyColumn(
         modifier = modifier
@@ -64,16 +89,6 @@ fun DashboardScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item { DashboardHeader(onOpenManage = onOpenManage) }
-
-        if (!state.isDataConnected) {
-            item {
-                InfoBanner(
-                    icon = R.drawable.ic_info,
-                    text = "Layout preview. Figures will appear here once you start recording " +
-                        "orders, stock, and expenses."
-                )
-            }
-        }
 
         item {
             QuickActions(
@@ -135,7 +150,7 @@ fun DashboardScreen(
         item { BestSellersCard(state.bestSellers) }
 
         item { SectionHeader("Recent orders") }
-        item { RecentOrdersCard(state.recentOrders) }
+        item { RecentOrdersCard(state.recentOrders, onOpenOrder) }
     }
 }
 
@@ -270,7 +285,7 @@ private fun ProfitHeroCard(profit: String) {
             }
             Text(text = profit, style = MaterialTheme.typography.displaySmall)
             Text(
-                text = "Net sales − COGS − Operating expenses",
+                text = "Net sales − COGS − stock losses − operating expenses",
                 style = MaterialTheme.typography.bodySmall,
                 color = colors.onPrimary.copy(alpha = 0.8f)
             )
@@ -305,7 +320,7 @@ private fun StockAlertsCard(state: DashboardUiState) {
                 EmptyState(
                     icon = R.drawable.ic_nav_inventory,
                     title = "No stock alerts",
-                    message = "Ingredients running low will be listed here once inventory is set up."
+                    message = "Ingredients at or below their reorder level are listed here."
                 )
             } else {
                 state.stockAlerts.forEach { alert ->
@@ -373,7 +388,7 @@ private fun BestSellersCard(bestSellers: List<BestSeller>) {
 }
 
 @Composable
-private fun RecentOrdersCard(orders: List<RecentOrder>) {
+private fun RecentOrdersCard(orders: List<RecentOrder>, onOpenOrder: (Long) -> Unit) {
     CoffeeCard(modifier = Modifier.fillMaxWidth()) {
         if (orders.isEmpty()) {
             EmptyState(
@@ -390,7 +405,8 @@ private fun RecentOrdersCard(orders: List<RecentOrder>) {
                         iconTint = MaterialTheme.colorScheme.secondary,
                         title = order.orderNumber,
                         subtitle = "${order.timeLabel} · ${order.statusLabel}",
-                        trailing = formatPeso(order.totalCentavos)
+                        trailing = formatPeso(order.totalCentavos),
+                        onClick = { onOpenOrder(order.orderId) }
                     )
                 }
             }
@@ -405,10 +421,12 @@ private fun ListRow(
     title: String,
     subtitle: String,
     trailing: String,
+    onClick: (() -> Unit)? = null,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .heightIn(min = 56.dp)
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -441,6 +459,13 @@ private fun ListRow(
 @Composable
 private fun DashboardScreenPreview() {
     CoffeeShopPOSTheme(darkTheme = false) {
-        DashboardScreen(onNewOrder = {}, onAddStock = {}, onRecordExpense = {}, onOpenManage = {})
+        DashboardContent(
+            state = DashboardUiState(),
+            onNewOrder = {},
+            onAddStock = {},
+            onRecordExpense = {},
+            onOpenManage = {},
+            onOpenOrder = {}
+        )
     }
 }

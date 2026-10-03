@@ -3,11 +3,10 @@ package com.project2.coffeeshoppos.ui.dashboard
 /**
  * Everything the dashboard displays. Money values are whole centavos.
  *
- * A null figure means "not available yet" and is shown as a dash, never as a fake number.
- * In Phase 7 a ViewModel will fill this from the Room database.
+ * A null figure means "not loaded yet" and is shown as a dash, never as a fake number.
+ * [DashboardViewModel] fills this with today's figures from the same report as the Reports tab.
  */
 data class DashboardUiState(
-    val isDataConnected: Boolean = false,
     val grossSalesCentavos: Long? = null,
     val completedOrders: Int? = null,
     val discountsAndRefundsCentavos: Long? = null,
@@ -34,6 +33,7 @@ data class BestSeller(
 )
 
 data class RecentOrder(
+    val orderId: Long,
     val orderNumber: String,
     val timeLabel: String,
     val statusLabel: String,

@@ -48,36 +48,30 @@ enum class TopLevelDestination(
     val route: Any,
     val label: String,
     @param:DrawableRes val icon: Int,
-    val comingSoonMessage: String,
 ) {
     Dashboard(
         route = DashboardRoute,
         label = "Dashboard",
-        icon = R.drawable.ic_nav_dashboard,
-        comingSoonMessage = ""
+        icon = R.drawable.ic_nav_dashboard
     ),
     Pos(
         route = PosRoute,
         label = "POS",
-        icon = R.drawable.ic_nav_pos,
-        comingSoonMessage = ""
+        icon = R.drawable.ic_nav_pos
     ),
     Inventory(
         route = InventoryRoute,
         label = "Inventory",
-        icon = R.drawable.ic_nav_inventory,
-        comingSoonMessage = ""
+        icon = R.drawable.ic_nav_inventory
     ),
     Expenses(
         route = ExpensesRoute,
         label = "Expenses",
-        icon = R.drawable.ic_nav_expenses,
-        comingSoonMessage = ""
+        icon = R.drawable.ic_nav_expenses
     ),
     Reports(
         route = ReportsRoute,
         label = "Reports",
-        icon = R.drawable.ic_nav_reports,
-        comingSoonMessage = "Sales, COGS, expense, and profit reports arrive in Phase 7."
+        icon = R.drawable.ic_nav_reports
     ),
 }

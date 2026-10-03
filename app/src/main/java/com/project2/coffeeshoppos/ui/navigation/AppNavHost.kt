@@ -7,7 +7,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.project2.coffeeshoppos.domain.RecipeTarget
-import com.project2.coffeeshoppos.ui.ComingSoonScreen
 import com.project2.coffeeshoppos.ui.dashboard.DashboardScreen
 import com.project2.coffeeshoppos.ui.expenses.ExpenseEditScreen
 import com.project2.coffeeshoppos.ui.expenses.ExpensesScreen
@@ -25,6 +24,7 @@ import com.project2.coffeeshoppos.ui.menu.ProductEditScreen
 import com.project2.coffeeshoppos.ui.orders.OrderDetailScreen
 import com.project2.coffeeshoppos.ui.orders.OrdersScreen
 import com.project2.coffeeshoppos.ui.pos.PosScreen
+import com.project2.coffeeshoppos.ui.reports.ReportsScreen
 
 /** The map of every screen in the app. New screens are added here as each phase is built. */
 @Composable
@@ -47,7 +47,8 @@ fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) 
                 onNewOrder = { navController.navigateToTab(TopLevelDestination.Pos) },
                 onAddStock = { navController.navigateToTab(TopLevelDestination.Inventory) },
                 onRecordExpense = { navController.navigateToTab(TopLevelDestination.Expenses) },
-                onOpenManage = { navController.navigate(ManageRoute) }
+                onOpenManage = { navController.navigate(ManageRoute) },
+                onOpenOrder = { id -> navController.navigate(OrderDetailRoute(id)) }
             )
         }
         composable<PosRoute> {
@@ -72,7 +73,7 @@ fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) 
                 onOpenRecurring = { navController.navigate(RecurringExpensesRoute) }
             )
         }
-        composable<ReportsRoute> { ComingSoonScreen(TopLevelDestination.Reports) }
+        composable<ReportsRoute> { ReportsScreen() }
         composable<ManageRoute> {
             ManageScreen(
                 onBack = { navController.popBackStack() },

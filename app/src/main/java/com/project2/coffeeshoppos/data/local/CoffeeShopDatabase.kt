@@ -11,6 +11,7 @@ import com.project2.coffeeshoppos.data.local.dao.CatalogDao
 import com.project2.coffeeshoppos.data.local.dao.ExpenseDao
 import com.project2.coffeeshoppos.data.local.dao.InventoryDao
 import com.project2.coffeeshoppos.data.local.dao.OrderDao
+import com.project2.coffeeshoppos.data.local.dao.ReportDao
 import com.project2.coffeeshoppos.data.local.entity.AddOnEntity
 import com.project2.coffeeshoppos.data.local.entity.AddOnRecipeItemEntity
 import com.project2.coffeeshoppos.data.local.entity.AuditRecordEntity
@@ -68,6 +69,7 @@ abstract class CoffeeShopDatabase : RoomDatabase() {
     abstract fun orderDao(): OrderDao
     abstract fun expenseDao(): ExpenseDao
     abstract fun auditDao(): AuditDao
+    abstract fun reportDao(): ReportDao
 
     companion object {
         const val VERSION = 1
