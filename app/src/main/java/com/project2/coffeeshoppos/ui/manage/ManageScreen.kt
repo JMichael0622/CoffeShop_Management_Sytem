@@ -45,6 +45,7 @@ fun ManageScreen(
     onBack: () -> Unit,
     onOpenMenu: () -> Unit,
     onOpenAddOns: () -> Unit,
+    onOpenRecipes: () -> Unit,
     viewModel: ManageViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val status by viewModel.databaseStatus.collectAsStateWithLifecycle()
@@ -55,7 +56,10 @@ fun ManageScreen(
         ),
         ManageItem("Add-ons", "Extras like an extra shot or oat milk", R.drawable.ic_discount, onClick = onOpenAddOns),
     )
-    ManageContent(status = status, menuItems = menuItems, onBack = onBack)
+    val inventoryItems = listOf(
+        ManageItem("Recipes", "Ingredients used by each product", R.drawable.ic_nav_inventory, onClick = onOpenRecipes),
+    )
+    ManageContent(status = status, menuItems = menuItems, inventoryItems = inventoryItems, onBack = onBack)
 }
 
 /** A row in the hub. Rows without [onClick] are not built yet and show [availableIn] instead. */
@@ -67,9 +71,6 @@ private data class ManageItem(
     val onClick: (() -> Unit)? = null,
 )
 
-private val inventoryItems = listOf(
-    ManageItem("Recipes", "Ingredients used by each product", R.drawable.ic_nav_inventory, "Phase 4"),
-)
 private val dataItems = listOf(
     ManageItem("Export reports", "Save CSV or PDF files", R.drawable.ic_nav_reports, "Phase 8"),
     ManageItem("Backup & restore", "Save a copy of all shop data", R.drawable.ic_receipt, "Phase 8"),
@@ -77,7 +78,12 @@ private val dataItems = listOf(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ManageContent(status: DatabaseStatus, menuItems: List<ManageItem>, onBack: () -> Unit) {
+private fun ManageContent(
+    status: DatabaseStatus,
+    menuItems: List<ManageItem>,
+    inventoryItems: List<ManageItem>,
+    onBack: () -> Unit,
+) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
@@ -213,6 +219,7 @@ private fun ManageContentPreview() {
         ManageContent(
             status = DatabaseStatus.Ready(1, products = 0, ingredients = 0, orders = 0, expenses = 0),
             menuItems = listOf(ManageItem("Products & categories", "Menu items", R.drawable.ic_cafe, onClick = {})),
+            inventoryItems = listOf(ManageItem("Recipes", "Ingredients", R.drawable.ic_nav_inventory, onClick = {})),
             onBack = {}
         )
     }

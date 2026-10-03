@@ -44,7 +44,7 @@ class CoffeeShopDatabaseTest {
     fun tearDown() = db.close()
 
     @Test
-    fun storesProductWithVariationAndExactCosts() = runBlocking {
+    fun storesProductWithVariationAndExactCosts() = runBlocking<Unit> {
         val catalog = db.catalogDao()
         val categoryId = catalog.insertCategory(CategoryEntity(name = "Coffee", createdAt = now))
         val productId = catalog.insertProduct(
@@ -73,7 +73,7 @@ class CoffeeShopDatabaseTest {
     }
 
     @Test
-    fun ingredientUsedInRecipeCannotBeDeleted() = runBlocking {
+    fun ingredientUsedInRecipeCannotBeDeleted() = runBlocking<Unit> {
         val catalog = db.catalogDao()
         val productId = catalog.insertProduct(
             ProductEntity(categoryId = null, name = "Latte", createdAt = now, updatedAt = now)
@@ -94,7 +94,7 @@ class CoffeeShopDatabaseTest {
     }
 
     @Test
-    fun sameRecurringPeriodCannotBeRecordedTwice() = runBlocking {
+    fun sameRecurringPeriodCannotBeRecordedTwice() = runBlocking<Unit> {
         val expenses = db.expenseDao()
         val templateId = expenses.insertTemplate(
             RecurringExpenseTemplateEntity(

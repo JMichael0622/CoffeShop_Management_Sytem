@@ -25,6 +25,15 @@ import kotlinx.serialization.Serializable
 /** Product editor. productId = 0 creates a new product. */
 @Serializable data class ProductEditRoute(val productId: Long = 0L)
 
+// Inventory (Phase 4)
+/** Ingredient editor. ingredientId = 0 creates a new ingredient. */
+@Serializable data class IngredientEditRoute(val ingredientId: Long = 0L)
+@Serializable data class IngredientDetailRoute(val ingredientId: Long)
+@Serializable object RecipesRoute
+
+/** Recipe editor for exactly one of: a product size (variationId) or an add-on (addOnId). */
+@Serializable data class RecipeEditRoute(val variationId: Long = 0L, val addOnId: Long = 0L)
+
 /** The five tabs in the bottom navigation bar. */
 enum class TopLevelDestination(
     val route: Any,
@@ -48,7 +57,7 @@ enum class TopLevelDestination(
         route = InventoryRoute,
         label = "Inventory",
         icon = R.drawable.ic_nav_inventory,
-        comingSoonMessage = "Ingredients, recipes, purchases, and stock movements arrive in Phase 4."
+        comingSoonMessage = ""
     ),
     Expenses(
         route = ExpensesRoute,

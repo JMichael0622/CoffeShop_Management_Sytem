@@ -50,7 +50,7 @@ class CatalogRepositoryTest {
         )
 
     @Test
-    fun removedSizeIsArchivedNotDeletedAndChangesAreAudited() = runBlocking {
+    fun removedSizeIsArchivedNotDeletedAndChangesAreAudited() = runBlocking<Unit> {
         val productId = repository.saveProduct(
             latte(sizes = listOf(SizeInput(0, "12 oz", 12_000), SizeInput(0, "16 oz", 15_000)))
         )
@@ -73,7 +73,7 @@ class CatalogRepositoryTest {
     }
 
     @Test
-    fun categoryWithActiveProductsCannotBeArchived() = runBlocking {
+    fun categoryWithActiveProductsCannotBeArchived() = runBlocking<Unit> {
         val coffee = repository.addCategory("Coffee")
         val productId = repository.saveProduct(latte(sizes = listOf(SizeInput(0, "Regular", 12_000)), categoryId = coffee))
 
@@ -87,7 +87,7 @@ class CatalogRepositoryTest {
     }
 
     @Test
-    fun duplicateNamesAreRejectedIgnoringCase() = runBlocking {
+    fun duplicateNamesAreRejectedIgnoringCase() = runBlocking<Unit> {
         repository.addCategory("Coffee")
         assertThrows(UserFacingException::class.java) {
             runBlocking { repository.addCategory("  coffee ") }
@@ -99,7 +99,7 @@ class CatalogRepositoryTest {
     }
 
     @Test
-    fun productAddOnLinksAreSaved() = runBlocking {
+    fun productAddOnLinksAreSaved() = runBlocking<Unit> {
         val shot = repository.saveAddOn(AddOnDraft(0, "Extra shot", 3_000, true))
         val oat = repository.saveAddOn(AddOnDraft(0, "Oat milk", 4_000, true))
         val productId = repository.saveProduct(latte(sizes = listOf(SizeInput(0, "Regular", 12_000)), addOns = setOf(shot, oat)))
@@ -111,7 +111,7 @@ class CatalogRepositoryTest {
     }
 
     @Test
-    fun categoriesCanBeReordered() = runBlocking {
+    fun categoriesCanBeReordered() = runBlocking<Unit> {
         val coffee = repository.addCategory("Coffee")
         val tea = repository.addCategory("Tea")
         repository.moveCategory(tea, up = true)

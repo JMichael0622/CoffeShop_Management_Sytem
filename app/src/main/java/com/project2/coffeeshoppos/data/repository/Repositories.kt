@@ -3,7 +3,6 @@ package com.project2.coffeeshoppos.data.repository
 import com.project2.coffeeshoppos.data.local.CoffeeShopDatabase
 import com.project2.coffeeshoppos.data.local.entity.AuditRecordEntity
 import com.project2.coffeeshoppos.data.local.entity.ExpenseEntity
-import com.project2.coffeeshoppos.data.local.entity.IngredientEntity
 import com.project2.coffeeshoppos.data.local.entity.OrderEntity
 import com.project2.coffeeshoppos.domain.AuditAction
 import java.time.Clock
@@ -12,14 +11,7 @@ import kotlinx.coroutines.flow.Flow
 
 // Repositories are the only place screens get data from. ViewModels never touch DAOs directly,
 // so rules like "every stock change writes a movement" live in one place.
-// Each repository grows in the phase that implements its feature (CatalogRepository has its own file).
-
-class InventoryRepository(private val db: CoffeeShopDatabase) {
-    private val dao = db.inventoryDao()
-
-    fun observeIngredients(): Flow<List<IngredientEntity>> = dao.observeActiveIngredients()
-    fun observeIngredientCount(): Flow<Int> = dao.observeActiveIngredientCount()
-}
+// Each repository grows in the phase that implements its feature (Catalog and Inventory have their own files).
 
 class OrderRepository(private val db: CoffeeShopDatabase) {
     private val dao = db.orderDao()
@@ -42,6 +34,7 @@ object AuditEntityType {
     const val CATEGORY = "category"
     const val PRODUCT = "product"
     const val ADD_ON = "add_on"
+    const val INGREDIENT = "ingredient"
 }
 
 /**

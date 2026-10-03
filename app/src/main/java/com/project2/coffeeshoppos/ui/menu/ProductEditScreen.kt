@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.project2.coffeeshoppos.R
+import com.project2.coffeeshoppos.domain.DEFAULT_SIZE_NAME
 import com.project2.coffeeshoppos.domain.SizeFormInput
 import com.project2.coffeeshoppos.ui.AppViewModelProvider
 import com.project2.coffeeshoppos.ui.components.CoffeeCard
@@ -64,6 +65,7 @@ import com.project2.coffeeshoppos.util.formatPeso
 @Composable
 fun ProductEditScreen(
     onClose: () -> Unit,
+    onEditRecipe: (variationId: Long) -> Unit,
     viewModel: ProductEditViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -123,10 +125,7 @@ fun ProductEditScreen(
                 DetailsSection(state, viewModel)
                 SizesSection(state, viewModel)
                 AddOnsSection(state, viewModel)
-                InfoBanner(
-                    icon = R.drawable.ic_info,
-                    text = "Recipes (ingredients used by each size) are set up in Phase 4, once ingredients exist."
-                )
+                RecipesSection(state, onEditRecipe)
                 Button(
                     onClick = viewModel::save,
                     enabled = !state.isSaving,
@@ -367,6 +366,31 @@ private fun AddOnsSection(state: ProductEditUiState, viewModel: ProductEditViewM
                     { StatusChip("Archived") }
                 } else null
             )
+        }
+    }
+}
+
+@Composable
+private fun RecipesSection(state: ProductEditUiState, onEditRecipe: (Long) -> Unit) {
+    SectionHeader("Recipes")
+    // Only sizes that are already saved have an id a recipe can belong to.
+    val savedSizes = state.form.sizes.filter { it.id != 0L }
+    Text(
+        if (savedSizes.isEmpty()) "Save the product first, then set the ingredients each size uses."
+        else "The ingredients each size uses, so sales take stock out automatically.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+    savedSizes.forEach { size ->
+        OutlinedButton(
+            onClick = { onEditRecipe(size.id) },
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+        ) {
+            Text(
+                "Recipe for ${size.name.ifBlank { DEFAULT_SIZE_NAME }}",
+                modifier = Modifier.weight(1f)
+            )
+            Icon(painterResource(R.drawable.ic_chevron_right), contentDescription = null)
         }
     }
 }

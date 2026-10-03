@@ -13,7 +13,7 @@ enum class UnitDimension { MASS, VOLUME, COUNT }
 enum class MeasureUnit(
     val symbol: String,
     val dimension: UnitDimension,
-    private val baseUnitsPerUnit: Long,
+    val baseUnitsPerUnit: Long,
 ) {
     GRAM("g", UnitDimension.MASS, 1),
     KILOGRAM("kg", UnitDimension.MASS, 1_000),
@@ -30,6 +30,20 @@ enum class MeasureUnit(
     /** Units the owner may pick when entering a quantity of an ingredient stored in this unit. */
     val compatibleUnits: List<MeasureUnit>
         get() = entries.filter { it.dimension == dimension }
+
+    /** The larger unit used to show big amounts and prices, e.g. 2.5 kg and ₱450/kg instead of grams. */
+    val displayUnit: MeasureUnit
+        get() = entries.filter { it.dimension == dimension }.maxBy { it.baseUnitsPerUnit }
+
+    /** Name shown when the owner picks an ingredient's unit, e.g. "Grams (g)". */
+    val label: String
+        get() = when (this) {
+            GRAM -> "Grams (g)"
+            KILOGRAM -> "Kilograms (kg)"
+            MILLILITER -> "Milliliters (ml)"
+            LITER -> "Liters (L)"
+            PIECE -> "Pieces (pc)"
+        }
 
     /**
      * Converts an entered amount (e.g. 1.5 kg) to thousandths of [target] (e.g. 1,500,000 for grams).

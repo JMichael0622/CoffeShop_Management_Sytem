@@ -7,6 +7,11 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.project2.coffeeshoppos.AppContainer
 import com.project2.coffeeshoppos.CoffeeShopApplication
+import com.project2.coffeeshoppos.ui.inventory.IngredientDetailViewModel
+import com.project2.coffeeshoppos.ui.inventory.IngredientEditViewModel
+import com.project2.coffeeshoppos.ui.inventory.InventoryViewModel
+import com.project2.coffeeshoppos.ui.inventory.RecipeEditViewModel
+import com.project2.coffeeshoppos.ui.inventory.RecipesViewModel
 import com.project2.coffeeshoppos.ui.manage.ManageViewModel
 import com.project2.coffeeshoppos.ui.menu.AddOnsViewModel
 import com.project2.coffeeshoppos.ui.menu.CategoriesViewModel
@@ -33,6 +38,14 @@ object AppViewModelProvider {
         initializer { ProductEditViewModel(createSavedStateHandle(), appContainer().catalogRepository) }
         initializer { CategoriesViewModel(appContainer().catalogRepository) }
         initializer { AddOnsViewModel(appContainer().catalogRepository) }
+        initializer { InventoryViewModel(appContainer().inventoryRepository) }
+        initializer { IngredientEditViewModel(createSavedStateHandle(), appContainer().inventoryRepository) }
+        initializer {
+            val container = appContainer()
+            IngredientDetailViewModel(createSavedStateHandle(), container.inventoryRepository, container.clock)
+        }
+        initializer { RecipesViewModel(appContainer().inventoryRepository) }
+        initializer { RecipeEditViewModel(createSavedStateHandle(), appContainer().inventoryRepository) }
     }
 }
 

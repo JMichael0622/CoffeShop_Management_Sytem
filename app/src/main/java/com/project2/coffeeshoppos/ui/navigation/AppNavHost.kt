@@ -6,8 +6,14 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.project2.coffeeshoppos.domain.RecipeTarget
 import com.project2.coffeeshoppos.ui.ComingSoonScreen
 import com.project2.coffeeshoppos.ui.dashboard.DashboardScreen
+import com.project2.coffeeshoppos.ui.inventory.IngredientDetailScreen
+import com.project2.coffeeshoppos.ui.inventory.IngredientEditScreen
+import com.project2.coffeeshoppos.ui.inventory.InventoryScreen
+import com.project2.coffeeshoppos.ui.inventory.RecipeEditScreen
+import com.project2.coffeeshoppos.ui.inventory.RecipesScreen
 import com.project2.coffeeshoppos.ui.manage.ManageScreen
 import com.project2.coffeeshoppos.ui.menu.AddOnsScreen
 import com.project2.coffeeshoppos.ui.menu.CategoriesScreen
@@ -17,6 +23,14 @@ import com.project2.coffeeshoppos.ui.menu.ProductEditScreen
 /** The map of every screen in the app. New screens are added here as each phase is built. */
 @Composable
 fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) {
+    val openRecipe = { target: RecipeTarget ->
+        navController.navigate(
+            when (target) {
+                is RecipeTarget.Variation -> RecipeEditRoute(variationId = target.variationId)
+                is RecipeTarget.AddOn -> RecipeEditRoute(addOnId = target.addOnId)
+            }
+        )
+    }
     NavHost(
         navController = navController,
         startDestination = DashboardRoute,
@@ -31,14 +45,21 @@ fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) 
             )
         }
         composable<PosRoute> { ComingSoonScreen(TopLevelDestination.Pos) }
-        composable<InventoryRoute> { ComingSoonScreen(TopLevelDestination.Inventory) }
+        composable<InventoryRoute> {
+            InventoryScreen(
+                onAddIngredient = { navController.navigate(IngredientEditRoute()) },
+                onOpenIngredient = { id -> navController.navigate(IngredientDetailRoute(id)) },
+                onOpenRecipes = { navController.navigate(RecipesRoute) }
+            )
+        }
         composable<ExpensesRoute> { ComingSoonScreen(TopLevelDestination.Expenses) }
         composable<ReportsRoute> { ComingSoonScreen(TopLevelDestination.Reports) }
         composable<ManageRoute> {
             ManageScreen(
                 onBack = { navController.popBackStack() },
                 onOpenMenu = { navController.navigate(MenuRoute) },
-                onOpenAddOns = { navController.navigate(AddOnsRoute) }
+                onOpenAddOns = { navController.navigate(AddOnsRoute) },
+                onOpenRecipes = { navController.navigate(RecipesRoute) }
             )
         }
         composable<MenuRoute> {
@@ -51,10 +72,34 @@ fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) 
             )
         }
         composable<ProductEditRoute> {
-            ProductEditScreen(onClose = { navController.popBackStack() })
+            ProductEditScreen(
+                onClose = { navController.popBackStack() },
+                onEditRecipe = { variationId -> openRecipe(RecipeTarget.Variation(variationId)) }
+            )
         }
         composable<CategoriesRoute> { CategoriesScreen(onBack = { navController.popBackStack() }) }
-        composable<AddOnsRoute> { AddOnsScreen(onBack = { navController.popBackStack() }) }
+        composable<AddOnsRoute> {
+            AddOnsScreen(
+                onBack = { navController.popBackStack() },
+                onEditRecipe = { addOnId -> openRecipe(RecipeTarget.AddOn(addOnId)) }
+            )
+        }
+        composable<IngredientEditRoute> { IngredientEditScreen(onClose = { navController.popBackStack() }) }
+        composable<IngredientDetailRoute> {
+            IngredientDetailScreen(
+                onBack = { navController.popBackStack() },
+                onEdit = { id -> navController.navigate(IngredientEditRoute(id)) }
+            )
+        }
+        composable<RecipesRoute> {
+            RecipesScreen(onBack = { navController.popBackStack() }, onEditRecipe = openRecipe)
+        }
+        composable<RecipeEditRoute> {
+            RecipeEditScreen(
+                onClose = { navController.popBackStack() },
+                onAddIngredient = { navController.navigate(IngredientEditRoute()) }
+            )
+        }
     }
 }
 

@@ -117,8 +117,17 @@ interface CatalogDao {
     @Query("DELETE FROM product_add_ons WHERE productId = :productId")
     suspend fun deleteProductAddOns(productId: Long)
 
+    @Query("SELECT * FROM product_variations WHERE id = :id")
+    suspend fun getVariation(id: Long): ProductVariationEntity?
+
     // Recipes
-    @Query("SELECT * FROM variation_recipe_items WHERE variationId = :variationId")
+    @Query("SELECT * FROM variation_recipe_items")
+    fun observeAllVariationRecipeItems(): Flow<List<VariationRecipeItemEntity>>
+
+    @Query("SELECT * FROM add_on_recipe_items")
+    fun observeAllAddOnRecipeItems(): Flow<List<AddOnRecipeItemEntity>>
+
+    @Query("SELECT * FROM variation_recipe_items WHERE variationId = :variationId ORDER BY id")
     suspend fun getVariationRecipe(variationId: Long): List<VariationRecipeItemEntity>
 
     @Insert
@@ -127,7 +136,7 @@ interface CatalogDao {
     @Query("DELETE FROM variation_recipe_items WHERE variationId = :variationId")
     suspend fun deleteVariationRecipe(variationId: Long)
 
-    @Query("SELECT * FROM add_on_recipe_items WHERE addOnId = :addOnId")
+    @Query("SELECT * FROM add_on_recipe_items WHERE addOnId = :addOnId ORDER BY id")
     suspend fun getAddOnRecipe(addOnId: Long): List<AddOnRecipeItemEntity>
 
     @Insert

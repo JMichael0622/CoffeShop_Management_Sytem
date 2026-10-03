@@ -53,6 +53,7 @@ import com.project2.coffeeshoppos.util.formatPeso
 @Composable
 fun AddOnsScreen(
     onBack: () -> Unit,
+    onEditRecipe: (addOnId: Long) -> Unit,
     viewModel: AddOnsViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -175,6 +176,10 @@ fun AddOnsScreen(
                 Switch(checked = dialog.isAvailable, onCheckedChange = viewModel::onAvailableChange)
             }
             if (dialog.addOn != null) {
+                TextButton(onClick = { viewModel.closeDialog(); onEditRecipe(dialog.addOn.id) }) {
+                    Icon(painterResource(R.drawable.ic_nav_inventory), contentDescription = null)
+                    Text("Edit recipe", modifier = Modifier.padding(start = 8.dp))
+                }
                 TextButton(onClick = { confirmArchive = dialog.addOn }) {
                     Icon(painterResource(R.drawable.ic_archive), contentDescription = null)
                     Text("Archive add-on", modifier = Modifier.padding(start = 8.dp))

@@ -19,7 +19,7 @@ class AppContainer(context: Context) {
     private val database: CoffeeShopDatabase by lazy { CoffeeShopDatabase.build(context) }
 
     val catalogRepository by lazy { CatalogRepository(database, auditRepository, clock) }
-    val inventoryRepository by lazy { InventoryRepository(database) }
+    val inventoryRepository by lazy { InventoryRepository(database, auditRepository, clock) }
     val orderRepository by lazy { OrderRepository(database) }
     val expenseRepository by lazy { ExpenseRepository(database) }
     val auditRepository by lazy { AuditRepository(database, clock) }
