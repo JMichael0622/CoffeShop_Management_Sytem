@@ -284,6 +284,57 @@ class InventoryRepository(
         change
     }
 
+    /**
+     * Takes the ingredients used by a completed order out of stock, one movement per ingredient,
+     * at average cost. Stock may go below zero: a sale is never blocked because the stock
+     * records are behind. Must run inside the order's transaction. Returns the total cost.
+     */
+    internal suspend fun recordSale(orderId: Long, orderNumber: String, usageMilli: Map<Long, Long>): Long {
+        var total = 0L
+        usageMilli.filterValues { it > 0 }.toSortedMap().forEach { (ingredientId, milli) ->
+            val ingredient = dao.getIngredient(ingredientId) ?: return@forEach
+            val cost = InventoryMath.costOf(milli, ingredient.averageCostCentavosPerUnit)
+            applyMovement(
+                ingredient = ingredient,
+                type = MovementType.SALE,
+                changeMilli = -milli,
+                costCentavos = -cost,
+                newAverageCost = ingredient.averageCostCentavosPerUnit,
+                reason = "Order $orderNumber",
+                orderId = orderId
+            )
+            total += cost
+        }
+        return total
+    }
+
+    /**
+     * Puts back what a refunded order took out, at the cost it was taken out at.
+     * Must run inside the refund's transaction. Returns the value returned to stock.
+     */
+    internal suspend fun returnSale(orderId: Long, orderNumber: String): Long {
+        var total = 0L
+        dao.getOrderMovements(orderId, MovementType.SALE).forEach { sale ->
+            val ingredient = dao.getIngredient(sale.ingredientId) ?: return@forEach
+            val milli = -sale.quantityChangeMilli
+            val cost = -sale.costCentavos
+            if (milli <= 0) return@forEach
+            applyMovement(
+                ingredient = ingredient,
+                type = MovementType.REFUND_RETURN,
+                changeMilli = milli,
+                costCentavos = cost,
+                newAverageCost = InventoryMath.weightedAverage(
+                    ingredient.quantityOnHandMilli, ingredient.averageCostCentavosPerUnit, milli, cost
+                ),
+                reason = "Refund of order $orderNumber",
+                orderId = orderId
+            )
+            total += cost
+        }
+        return total
+    }
+
     /** The only place quantity on hand changes: updates the ingredient and writes its ledger row. */
     private suspend fun applyMovement(
         ingredient: IngredientEntity,
@@ -293,6 +344,7 @@ class InventoryRepository(
         newAverageCost: BigDecimal,
         reason: String,
         purchaseId: Long? = null,
+        orderId: Long? = null,
     ) {
         val now = clock.instant()
         val after = ingredient.quantityOnHandMilli + changeMilli
@@ -309,6 +361,7 @@ class InventoryRepository(
                 costCentavos = costCentavos,
                 reason = reason,
                 purchaseId = purchaseId,
+                orderId = orderId,
                 createdAt = now
             )
         )

@@ -19,6 +19,9 @@ import com.project2.coffeeshoppos.ui.menu.AddOnsScreen
 import com.project2.coffeeshoppos.ui.menu.CategoriesScreen
 import com.project2.coffeeshoppos.ui.menu.MenuScreen
 import com.project2.coffeeshoppos.ui.menu.ProductEditScreen
+import com.project2.coffeeshoppos.ui.orders.OrderDetailScreen
+import com.project2.coffeeshoppos.ui.orders.OrdersScreen
+import com.project2.coffeeshoppos.ui.pos.PosScreen
 
 /** The map of every screen in the app. New screens are added here as each phase is built. */
 @Composable
@@ -44,7 +47,13 @@ fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) 
                 onOpenManage = { navController.navigate(ManageRoute) }
             )
         }
-        composable<PosRoute> { ComingSoonScreen(TopLevelDestination.Pos) }
+        composable<PosRoute> {
+            PosScreen(
+                onOpenOrders = { navController.navigate(OrdersRoute) },
+                onOpenOrder = { id -> navController.navigate(OrderDetailRoute(id)) },
+                onOpenMenuSetup = { navController.navigate(MenuRoute) }
+            )
+        }
         composable<InventoryRoute> {
             InventoryScreen(
                 onAddIngredient = { navController.navigate(IngredientEditRoute()) },
@@ -100,6 +109,13 @@ fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) 
                 onAddIngredient = { navController.navigate(IngredientEditRoute()) }
             )
         }
+        composable<OrdersRoute> {
+            OrdersScreen(
+                onBack = { navController.popBackStack() },
+                onOpenOrder = { id -> navController.navigate(OrderDetailRoute(id)) }
+            )
+        }
+        composable<OrderDetailRoute> { OrderDetailScreen(onBack = { navController.popBackStack() }) }
     }
 }
 

@@ -34,6 +34,10 @@ import kotlinx.serialization.Serializable
 /** Recipe editor for exactly one of: a product size (variationId) or an add-on (addOnId). */
 @Serializable data class RecipeEditRoute(val variationId: Long = 0L, val addOnId: Long = 0L)
 
+// Orders (Phase 5)
+@Serializable object OrdersRoute
+@Serializable data class OrderDetailRoute(val orderId: Long)
+
 /** The five tabs in the bottom navigation bar. */
 enum class TopLevelDestination(
     val route: Any,
@@ -51,7 +55,7 @@ enum class TopLevelDestination(
         route = PosRoute,
         label = "POS",
         icon = R.drawable.ic_nav_pos,
-        comingSoonMessage = "Taking orders, payments, and order history arrive in Phase 5."
+        comingSoonMessage = ""
     ),
     Inventory(
         route = InventoryRoute,

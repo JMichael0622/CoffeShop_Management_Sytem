@@ -7,6 +7,7 @@ import androidx.room.Update
 import com.project2.coffeeshoppos.data.local.entity.IngredientEntity
 import com.project2.coffeeshoppos.data.local.entity.InventoryMovementEntity
 import com.project2.coffeeshoppos.data.local.entity.PurchaseEntity
+import com.project2.coffeeshoppos.domain.MovementType
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -51,6 +52,9 @@ interface InventoryDao {
 
     @Query("SELECT * FROM inventory_movements WHERE ingredientId = :ingredientId ORDER BY createdAt DESC, id DESC")
     fun observeMovements(ingredientId: Long): Flow<List<InventoryMovementEntity>>
+
+    @Query("SELECT * FROM inventory_movements WHERE orderId = :orderId AND type = :type ORDER BY id")
+    suspend fun getOrderMovements(orderId: Long, type: MovementType): List<InventoryMovementEntity>
 
     @Query("SELECT COUNT(*) FROM inventory_movements WHERE ingredientId = :ingredientId")
     suspend fun countMovements(ingredientId: Long): Int

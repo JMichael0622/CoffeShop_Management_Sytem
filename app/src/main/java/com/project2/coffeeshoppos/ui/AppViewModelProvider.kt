@@ -17,6 +17,9 @@ import com.project2.coffeeshoppos.ui.menu.AddOnsViewModel
 import com.project2.coffeeshoppos.ui.menu.CategoriesViewModel
 import com.project2.coffeeshoppos.ui.menu.MenuViewModel
 import com.project2.coffeeshoppos.ui.menu.ProductEditViewModel
+import com.project2.coffeeshoppos.ui.orders.OrderDetailViewModel
+import com.project2.coffeeshoppos.ui.orders.OrdersViewModel
+import com.project2.coffeeshoppos.ui.pos.PosViewModel
 
 /**
  * Tells Android how to build each ViewModel with the repositories it needs.
@@ -46,6 +49,15 @@ object AppViewModelProvider {
         }
         initializer { RecipesViewModel(appContainer().inventoryRepository) }
         initializer { RecipeEditViewModel(createSavedStateHandle(), appContainer().inventoryRepository) }
+        initializer {
+            val container = appContainer()
+            PosViewModel(container.catalogRepository, container.orderRepository)
+        }
+        initializer {
+            val container = appContainer()
+            OrdersViewModel(container.orderRepository, container.clock)
+        }
+        initializer { OrderDetailViewModel(createSavedStateHandle(), appContainer().orderRepository) }
     }
 }
 

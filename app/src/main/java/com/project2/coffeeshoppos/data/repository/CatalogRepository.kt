@@ -9,6 +9,10 @@ import com.project2.coffeeshoppos.data.local.entity.ProductEntity
 import com.project2.coffeeshoppos.data.local.entity.ProductVariationEntity
 import com.project2.coffeeshoppos.domain.AddOnDraft
 import com.project2.coffeeshoppos.domain.AuditAction
+import com.project2.coffeeshoppos.domain.PosAddOn
+import com.project2.coffeeshoppos.domain.PosMenu
+import com.project2.coffeeshoppos.domain.PosProduct
+import com.project2.coffeeshoppos.domain.PosSize
 import com.project2.coffeeshoppos.domain.ProductDraft
 import com.project2.coffeeshoppos.domain.ProductSummary
 import com.project2.coffeeshoppos.domain.UserFacingException
@@ -69,6 +73,43 @@ class CatalogRepository(
                 sizeCount = prices.size
             )
         }
+    }
+
+    /** What can be sold right now: available products with their active sizes and available add-ons. */
+    fun observePosMenu(): Flow<PosMenu> = combine(
+        dao.observeActiveProducts(),
+        dao.observeActiveCategories(),
+        dao.observeAllActiveVariations(),
+        dao.observeActiveAddOns(),
+        dao.observeAllProductAddOns(),
+    ) { products, categories, sizes, addOns, links ->
+        val sizesByProduct = sizes.groupBy { it.productId }
+        val addOnsById = addOns.filter { it.isAvailable }.associateBy { it.id }
+        val addOnIdsByProduct = links.groupBy({ it.productId }, { it.addOnId })
+        val categoryOrder = categories.withIndex().associate { (index, category) -> category.id to index }
+        PosMenu(
+            categories = categories.map { it.id to it.name },
+            products = products
+                .filter { it.isAvailable }
+                .sortedWith(
+                    compareBy<ProductEntity>({ categoryOrder[it.categoryId] ?: Int.MAX_VALUE }, { it.sortOrder })
+                        .thenBy(String.CASE_INSENSITIVE_ORDER) { it.name }
+                )
+                .mapNotNull { product ->
+                    val productSizes = sizesByProduct[product.id].orEmpty().sortedBy { it.sortOrder }
+                    if (productSizes.isEmpty()) return@mapNotNull null
+                    PosProduct(
+                        id = product.id,
+                        name = product.name,
+                        categoryId = product.categoryId,
+                        sizes = productSizes.map { PosSize(it.id, it.name, it.priceCentavos) },
+                        addOns = addOnIdsByProduct[product.id].orEmpty()
+                            .mapNotNull(addOnsById::get)
+                            .sortedBy { it.name.lowercase() }
+                            .map { PosAddOn(it.id, it.name, it.priceCentavos) }
+                    )
+                }
+        )
     }
 
     suspend fun getProductForEdit(id: Long): ProductEditData? {

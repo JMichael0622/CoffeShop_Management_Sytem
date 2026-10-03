@@ -108,6 +108,9 @@ interface CatalogDao {
     @Update
     suspend fun updateAddOn(addOn: AddOnEntity)
 
+    @Query("SELECT * FROM product_add_ons")
+    fun observeAllProductAddOns(): Flow<List<ProductAddOnCrossRef>>
+
     @Query("SELECT addOnId FROM product_add_ons WHERE productId = :productId")
     suspend fun getProductAddOnIds(productId: Long): List<Long>
 
