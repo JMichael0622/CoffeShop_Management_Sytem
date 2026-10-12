@@ -25,6 +25,17 @@ object InventoryMath {
     }
 
     /** Value in whole centavos of [quantityMilli] at [unitCost] centavos per base unit. */
+    /** Centavos per ONE base unit from a price per display unit, e.g. ₱1,000 per kg -> 100 centavos per gram. */
+    fun unitCostFromDisplayPrice(centavosPerDisplayUnit: Long, baseUnit: MeasureUnit): BigDecimal =
+        BigDecimal.valueOf(centavosPerDisplayUnit)
+            .divide(BigDecimal.valueOf(baseUnit.displayUnit.baseUnitsPerUnit), COST_SCALE, RoundingMode.HALF_UP)
+
+    /** The reverse of [unitCostFromDisplayPrice], rounded to whole centavos, e.g. for prefilling a price field. */
+    fun displayPriceCentavos(costPerBaseUnit: BigDecimal, baseUnit: MeasureUnit): Long =
+        costPerBaseUnit.multiply(BigDecimal.valueOf(baseUnit.displayUnit.baseUnitsPerUnit))
+            .setScale(0, RoundingMode.HALF_UP)
+            .longValueExact()
+
     fun costOf(quantityMilli: Long, unitCost: BigDecimal): Long =
         unitCost.multiply(BigDecimal.valueOf(quantityMilli))
             .movePointLeft(3)

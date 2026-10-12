@@ -77,6 +77,26 @@ class InventoryRepositoryTest {
     }
 
     @Test
+    fun correctingAWrongCostRevaluesStockWithoutChangingQuantity() = runBlocking<Unit> {
+        // 1 kg typed as ₱9,000 instead of ₱900.
+        val id = beans(openingGrams = 1_000, openingCost = 900_000)
+        repository.correctCost(id, BigDecimal("90"), "Mistyped opening cost")
+
+        val ingredient = repository.getIngredient(id)!!
+        assertEquals(1_000_000L, ingredient.quantityOnHandMilli)
+        assertEquals(0, BigDecimal("90").compareTo(ingredient.averageCostCentavosPerUnit))
+        val correction = repository.observeMovements(id).first().first()
+        assertEquals(MovementType.COST_CORRECTION, correction.type)
+        assertEquals(0L, correction.quantityChangeMilli)
+        assertEquals(-810_000L, correction.costCentavos) // ₱9,000 of stock is now worth ₱900
+        assertLedgerMatches(id)
+
+        assertThrows(UserFacingException::class.java) { runBlocking { repository.correctCost(id, BigDecimal("90"), "Again") } }
+        assertThrows(UserFacingException::class.java) { runBlocking { repository.correctCost(id, BigDecimal("80"), " ") } }
+        assertThrows(UserFacingException::class.java) { runBlocking { repository.correctCost(id, BigDecimal.ZERO, "Free?") } }
+    }
+
+    @Test
     fun openingStockAndPurchasesUpdateStockAndAverageCost() = runBlocking<Unit> {
         val id = beans(openingGrams = 1_000, openingCost = 90_000) // 1 kg for ₱900
         repository.recordPurchase(purchase(id, "1", 110_000)) // 1 kg for ₱1,100

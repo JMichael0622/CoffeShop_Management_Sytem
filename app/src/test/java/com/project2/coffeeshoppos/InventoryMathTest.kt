@@ -22,6 +22,15 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class InventoryMathTest {
+    @Test
+    fun convertsPricePerDisplayUnitToCostPerBaseUnit() {
+        // ₱1,000 per kg = 100 centavos per gram; ₱120 per L = 12 centavos per ml; ₱15 per piece.
+        assertEquals(BigDecimal("100.000000"), InventoryMath.unitCostFromDisplayPrice(100_000, MeasureUnit.GRAM))
+        assertEquals(BigDecimal("12.000000"), InventoryMath.unitCostFromDisplayPrice(12_000, MeasureUnit.MILLILITER))
+        assertEquals(BigDecimal("1500.000000"), InventoryMath.unitCostFromDisplayPrice(1_500, MeasureUnit.PIECE))
+        assertEquals(100_000L, InventoryMath.displayPriceCentavos(BigDecimal("100.000000"), MeasureUnit.GRAM))
+    }
+
     private fun ingredient(onHand: Long, reorder: Long = 0, cost: String = "0", unit: MeasureUnit = MeasureUnit.GRAM) =
         IngredientEntity(
             id = 1, name = "Beans", baseUnit = unit, quantityOnHandMilli = onHand,

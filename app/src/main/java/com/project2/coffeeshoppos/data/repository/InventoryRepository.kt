@@ -17,9 +17,11 @@ import com.project2.coffeeshoppos.domain.RecipeLine
 import com.project2.coffeeshoppos.domain.RecipeTarget
 import com.project2.coffeeshoppos.domain.UserFacingException
 import com.project2.coffeeshoppos.domain.formatQuantity
+import com.project2.coffeeshoppos.domain.formatUnitCost
 import com.project2.coffeeshoppos.domain.recipeCostCentavos
 import com.project2.coffeeshoppos.util.formatPeso
 import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.Clock
 import java.time.LocalDate
 import java.time.LocalTime
@@ -282,6 +284,36 @@ class InventoryRepository(
             reason = note.trim().ifEmpty { "Stock count" }
         )
         change
+    }
+
+    /**
+     * Fixes an ingredient's average cost when it was entered wrong, e.g. a purchase typed as
+     * ₱9,000 instead of ₱900. The stock on hand is revalued at the new cost and the change in its
+     * value is written to the ledger; the quantity does not change. Orders already completed keep
+     * the cost they were sold at, so past profit is not rewritten.
+     */
+    suspend fun correctCost(ingredientId: Long, newCostPerUnit: BigDecimal, reason: String) = db.withTransaction {
+        val ingredient = activeIngredient(ingredientId)
+        if (newCostPerUnit.signum() <= 0) throw UserFacingException("Enter a cost above zero")
+        val cleanReason = reason.trim().ifEmpty { throw UserFacingException("Say what was wrong, e.g. mistyped purchase") }
+        val newCost = newCostPerUnit.setScale(InventoryMath.COST_SCALE, RoundingMode.HALF_UP)
+        if (newCost.compareTo(ingredient.averageCostCentavosPerUnit) == 0) throw UserFacingException("That is already the cost")
+        val onHand = ingredient.quantityOnHandMilli.coerceAtLeast(0)
+        val valueChange = InventoryMath.costOf(onHand, newCost) - InventoryMath.costOf(onHand, ingredient.averageCostCentavosPerUnit)
+        val before = formatUnitCost(ingredient.averageCostCentavosPerUnit, ingredient.baseUnit)
+        val after = formatUnitCost(newCost, ingredient.baseUnit)
+        applyMovement(
+            ingredient = ingredient,
+            type = MovementType.COST_CORRECTION,
+            changeMilli = 0,
+            costCentavos = valueChange,
+            newAverageCost = newCost,
+            reason = "$before → $after: $cleanReason"
+        )
+        audit.record(
+            AuditEntityType.INGREDIENT, ingredient.id, AuditAction.UPDATE,
+            "Corrected cost of \"${ingredient.name}\" from $before to $after", details = cleanReason
+        )
     }
 
     /**

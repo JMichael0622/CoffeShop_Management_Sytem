@@ -45,6 +45,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.project2.coffeeshoppos.R
 import com.project2.coffeeshoppos.data.local.entity.IngredientEntity
 import com.project2.coffeeshoppos.data.local.entity.InventoryMovementEntity
+import com.project2.coffeeshoppos.domain.MovementType
 import com.project2.coffeeshoppos.domain.formatQuantity
 import com.project2.coffeeshoppos.domain.formatQuantityChange
 import com.project2.coffeeshoppos.domain.formatUnitCost
@@ -200,6 +201,9 @@ private fun StockActions(onAction: (StockAction) -> Unit) {
                 Text("Stock count")
             }
         }
+        TextButton(onClick = { onAction(StockAction.CORRECT_COST) }, modifier = Modifier.fillMaxWidth()) {
+            Text("Cost entered wrong? Correct cost")
+        }
     }
 }
 
@@ -238,7 +242,16 @@ private fun MovementRow(movement: InventoryMovementEntity, ingredient: Ingredien
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            if (movement.type == MovementType.COST_CORRECTION) {
+                Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(formatUnitCost(movement.unitCostCentavosPerUnit, ingredient.baseUnit), style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        "value ${if (movement.costCentavos >= 0) "+" else "−"}${formatPeso(kotlin.math.abs(movement.costCentavos))}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
                     formatQuantityChange(movement.quantityChangeMilli, ingredient.baseUnit),
                     style = MaterialTheme.typography.titleSmall,
@@ -276,22 +289,26 @@ private fun StockDialog(
                     StockAction.WASTAGE -> "Stock that was spoiled, spilled or expired. It is removed at average cost."
                     StockAction.COUNT -> "Enter what you physically counted. Recorded stock: " +
                         formatQuantity(ingredient.quantityOnHandMilli, ingredient.baseUnit) + "."
+                    StockAction.CORRECT_COST -> "Only for fixing a mistake, like a mistyped purchase. The stock on hand is " +
+                        "revalued; past orders keep their cost. If the supplier's price went up, record a purchase instead."
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            QuantityField(
-                value = dialog.quantityText,
-                onValueChange = viewModel::onQuantityChange,
-                unit = dialog.unit,
-                onUnitChange = viewModel::onUnitChange,
-                label = when (dialog.action) {
-                    StockAction.PURCHASE -> "Quantity bought"
-                    StockAction.WASTAGE -> "Quantity wasted"
-                    StockAction.COUNT -> "Counted quantity"
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
+            if (dialog.action != StockAction.CORRECT_COST) {
+                QuantityField(
+                    value = dialog.quantityText,
+                    onValueChange = viewModel::onQuantityChange,
+                    unit = dialog.unit,
+                    onUnitChange = viewModel::onUnitChange,
+                    label = when (dialog.action) {
+                        StockAction.PURCHASE -> "Quantity bought"
+                        StockAction.WASTAGE -> "Quantity wasted"
+                        else -> "Counted quantity"
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
             when (dialog.action) {
                 StockAction.PURCHASE -> {
                     OutlinedTextField(
@@ -317,6 +334,22 @@ private fun StockDialog(
                 }
                 StockAction.WASTAGE -> TextInput(dialog.note, viewModel::onNoteChange, "What happened?", KeyboardCapitalization.Sentences)
                 StockAction.COUNT -> TextInput(dialog.note, viewModel::onNoteChange, "Note (optional)", KeyboardCapitalization.Sentences)
+                StockAction.CORRECT_COST -> {
+                    Text(
+                        "Current cost: " + formatUnitCost(ingredient.averageCostCentavosPerUnit, ingredient.baseUnit),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    OutlinedTextField(
+                        value = dialog.costText,
+                        onValueChange = viewModel::onCostChange,
+                        label = { Text("Correct cost per ${ingredient.baseUnit.displayUnit.symbol}") },
+                        prefix = { Text("₱") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    TextInput(dialog.note, viewModel::onNoteChange, "What was wrong?", KeyboardCapitalization.Sentences)
+                }
             }
             if (dialog.error != null) {
                 Text(dialog.error, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)

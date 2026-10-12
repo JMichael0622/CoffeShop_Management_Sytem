@@ -15,6 +15,7 @@ import com.project2.coffeeshoppos.domain.formatQuantityChange
 import com.project2.coffeeshoppos.domain.formatUnitCost
 import com.project2.coffeeshoppos.domain.parseQuantity
 import com.project2.coffeeshoppos.ui.navigation.IngredientDetailRoute
+import com.project2.coffeeshoppos.util.centavosToInput
 import com.project2.coffeeshoppos.util.parsePesoToCentavos
 import java.time.Clock
 import java.time.LocalDate
@@ -30,6 +31,7 @@ enum class StockAction(val title: String, val confirmLabel: String) {
     PURCHASE("Record purchase", "Add stock"),
     WASTAGE("Record wastage", "Remove stock"),
     COUNT("Stock count", "Save count"),
+    CORRECT_COST("Correct cost", "Save cost"),
 }
 
 /** The open stock dialog. Only the fields for [action] are shown. */
@@ -40,7 +42,7 @@ data class StockDialogState(
     val costText: String = "",
     val supplier: String = "",
     val reference: String = "",
-    /** Wastage reason, or an optional note for a stock count or purchase. */
+    /** Wastage or cost correction reason, or an optional note for a stock count or purchase. */
     val note: String = "",
     val purchasedOn: LocalDate,
     val error: String? = null,
@@ -88,7 +90,11 @@ class IngredientDetailViewModel(
         val ingredient = uiState.value.ingredient ?: return
         // Purchases are usually in big units (kg, L); wastage and counts often in small ones.
         val unit = if (action == StockAction.PURCHASE) ingredient.baseUnit.displayUnit else ingredient.baseUnit
-        dialog.value = StockDialogState(action = action, unit = unit, purchasedOn = LocalDate.now(clock))
+        // A cost correction starts from today's cost, so a typo only needs a small fix.
+        val costText = if (action == StockAction.CORRECT_COST && ingredient.averageCostCentavosPerUnit.signum() > 0) {
+            centavosToInput(InventoryMath.displayPriceCentavos(ingredient.averageCostCentavosPerUnit, ingredient.baseUnit))
+        } else ""
+        dialog.value = StockDialogState(action = action, unit = unit, costText = costText, purchasedOn = LocalDate.now(clock))
     }
 
     fun closeDialog() { dialog.value = null }
@@ -118,6 +124,10 @@ class IngredientDetailViewModel(
         val current = dialog.value ?: return
         val ingredient = uiState.value.ingredient ?: return
         if (current.isSaving) return
+        if (current.action == StockAction.CORRECT_COST) {
+            saveCostCorrection(current, ingredient)
+            return
+        }
         val quantity = parseQuantity(current.quantityText)
         val milli = quantity?.let { current.unit.toMilli(it, ingredient.baseUnit) }
         val cost = parsePesoToCentavos(current.costText)
@@ -160,9 +170,34 @@ class IngredientDetailViewModel(
                         if (change == 0L) "Count matches the recorded stock. Nothing changed."
                         else "Stock adjusted by ${formatQuantityChange(change, ingredient.baseUnit)}"
                     }
+                    StockAction.CORRECT_COST -> error("Handled by saveCostCorrection")
                 }
                 dialog.value = null
                 message.value = done
+            } catch (e: Exception) {
+                dialog.update { it?.copy(isSaving = false, error = e.message ?: "Could not save") }
+            }
+        }
+    }
+
+    private fun saveCostCorrection(current: StockDialogState, ingredient: IngredientEntity) {
+        val price = parsePesoToCentavos(current.costText)
+        val error = when {
+            price == null || price <= 0 -> "Enter the correct cost, e.g. 900"
+            current.note.isBlank() -> "Say what was wrong, e.g. mistyped purchase"
+            else -> null
+        }
+        if (error != null) {
+            dialog.value = current.copy(error = error)
+            return
+        }
+        dialog.value = current.copy(isSaving = true)
+        viewModelScope.launch {
+            try {
+                val cost = InventoryMath.unitCostFromDisplayPrice(requireNotNull(price), ingredient.baseUnit)
+                repository.correctCost(ingredient.id, cost, current.note)
+                dialog.value = null
+                message.value = "Cost corrected to ${formatUnitCost(cost, ingredient.baseUnit)}"
             } catch (e: Exception) {
                 dialog.update { it?.copy(isSaving = false, error = e.message ?: "Could not save") }
             }

@@ -26,6 +26,8 @@ enum class MovementType(val label: String) {
     WASTAGE("Wastage / spoilage"),
     ADJUSTMENT("Manual adjustment"),
     REFUND_RETURN("Returned from refund"),
+    /** Fixes a wrongly entered cost. Revalues the stock on hand; the quantity does not change. */
+    COST_CORRECTION("Cost correction"),
 }
 
 /** Why a customer's stamps changed. Every change gets one loyalty entry. */
