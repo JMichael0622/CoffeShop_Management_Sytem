@@ -8,6 +8,7 @@ import com.project2.coffeeshoppos.data.repository.AuditRepository
 import com.project2.coffeeshoppos.data.repository.CatalogRepository
 import com.project2.coffeeshoppos.data.repository.ExpenseRepository
 import com.project2.coffeeshoppos.data.repository.InventoryRepository
+import com.project2.coffeeshoppos.data.repository.LoyaltyRepository
 import com.project2.coffeeshoppos.data.repository.OrderRepository
 import com.project2.coffeeshoppos.data.repository.ReportRepository
 import com.project2.coffeeshoppos.domain.CartLine
@@ -69,7 +70,7 @@ class ReportRepositoryTest {
         val audit = AuditRepository(db, clock)
         val catalog = CatalogRepository(db, audit, clock)
         inventory = InventoryRepository(db, audit, clock)
-        orders = OrderRepository(db, inventory, audit, clock)
+        orders = OrderRepository(db, inventory, LoyaltyRepository(db, audit, clock), audit, clock)
         expenses = ExpenseRepository(db, audit, clock)
         reports = ReportRepository(db, clock)
 

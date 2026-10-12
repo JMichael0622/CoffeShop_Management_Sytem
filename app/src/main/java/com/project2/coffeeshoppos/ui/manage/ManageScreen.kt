@@ -45,6 +45,8 @@ fun ManageScreen(
     onOpenMenu: () -> Unit,
     onOpenAddOns: () -> Unit,
     onOpenRecipes: () -> Unit,
+    onOpenCustomers: () -> Unit,
+    onOpenLoyaltySettings: () -> Unit,
     onOpenExport: () -> Unit,
     onOpenBackup: () -> Unit,
     viewModel: ManageViewModel = viewModel(factory = AppViewModelProvider.Factory),
@@ -60,11 +62,22 @@ fun ManageScreen(
     val inventoryItems = listOf(
         ManageItem("Recipes", "Ingredients used by each product", R.drawable.ic_nav_inventory, onClick = onOpenRecipes),
     )
+    val customerItems = listOf(
+        ManageItem("Customers", "Loyalty customers and their stamps", R.drawable.ic_person, onClick = onOpenCustomers),
+        ManageItem("Loyalty card", "Stamps for a free drink and its limit", R.drawable.ic_star, onClick = onOpenLoyaltySettings),
+    )
     val dataItems = listOf(
         ManageItem("Export reports", "Save CSV or PDF files", R.drawable.ic_nav_reports, onClick = onOpenExport),
         ManageItem("Backup & restore", "Save a copy of all shop data", R.drawable.ic_receipt, onClick = onOpenBackup),
     )
-    ManageContent(status = status, menuItems = menuItems, inventoryItems = inventoryItems, dataItems = dataItems, onBack = onBack)
+    ManageContent(
+        status = status,
+        menuItems = menuItems,
+        inventoryItems = inventoryItems,
+        customerItems = customerItems,
+        dataItems = dataItems,
+        onBack = onBack
+    )
 }
 
 /** A row in the hub. */
@@ -81,6 +94,7 @@ private fun ManageContent(
     status: DatabaseStatus,
     menuItems: List<ManageItem>,
     inventoryItems: List<ManageItem>,
+    customerItems: List<ManageItem>,
     dataItems: List<ManageItem>,
     onBack: () -> Unit,
 ) {
@@ -111,6 +125,8 @@ private fun ManageContent(
             item { ManageGroup(menuItems) }
             item { SectionHeader("Inventory") }
             item { ManageGroup(inventoryItems) }
+            item { SectionHeader("Customers") }
+            item { ManageGroup(customerItems) }
             item { SectionHeader("Data") }
             item { ManageGroup(dataItems) }
             item { SectionHeader("Database") }
@@ -215,6 +231,7 @@ private fun ManageContentPreview() {
             status = DatabaseStatus.Ready(1, products = 0, ingredients = 0, orders = 0, expenses = 0),
             menuItems = listOf(ManageItem("Products & categories", "Menu items", R.drawable.ic_cafe, onClick = {})),
             inventoryItems = listOf(ManageItem("Recipes", "Ingredients", R.drawable.ic_nav_inventory, onClick = {})),
+            customerItems = listOf(ManageItem("Customers", "Loyalty", R.drawable.ic_person, onClick = {})),
             dataItems = listOf(ManageItem("Backup & restore", "Save a copy", R.drawable.ic_receipt, onClick = {})),
             onBack = {}
         )

@@ -34,6 +34,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.project2.coffeeshoppos.R
+import com.project2.coffeeshoppos.data.local.dao.CustomerSummary
+import com.project2.coffeeshoppos.data.local.entity.LoyaltyEntryEntity
 import com.project2.coffeeshoppos.data.repository.OrderDetail
 import com.project2.coffeeshoppos.data.repository.OrderLineDetail
 import com.project2.coffeeshoppos.data.repository.shortOrderNumber
@@ -53,6 +55,7 @@ import java.time.ZoneId
 @Composable
 fun OrderDetailScreen(
     onBack: () -> Unit,
+    onOpenCustomer: (Long) -> Unit,
     viewModel: OrderDetailViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -83,6 +86,9 @@ fun OrderDetailScreen(
             ) {
                 item { HeaderCard(detail) }
                 item { ItemsCard(detail) }
+                state.customer?.let { customer ->
+                    item { LoyaltyCard(customer, state.loyaltyEntries, onOpenCustomer) }
+                }
                 item { PaymentCard(detail) }
                 val order = detail.order
                 if (order.cogsCentavos != null) {
@@ -162,10 +168,39 @@ private fun ItemsCard(detail: OrderDetail) {
             detail.lines.forEach { LineRow(it) }
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             DetailRow("Subtotal", formatPeso(order.subtotalCentavos))
+            if (order.loyaltyRewardCentavos > 0) {
+                DetailRow("Loyalty free drink", "−${formatPeso(order.loyaltyRewardCentavos)}")
+            }
             if (order.discountCentavos > 0) {
                 DetailRow("Discount (${order.discountReason})", "−${formatPeso(order.discountCentavos)}")
             }
             DetailRow("Total", formatPeso(order.totalCentavos), emphasize = true)
+        }
+    }
+}
+
+@Composable
+private fun LoyaltyCard(customer: CustomerSummary, entries: List<LoyaltyEntryEntity>, onOpenCustomer: (Long) -> Unit) {
+    val isDeleted = customer.customer.isDeleted
+    CoffeeCard(Modifier.fillMaxWidth()) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .then(if (isDeleted) Modifier else Modifier.clickable { onOpenCustomer(customer.customer.id) })
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            DetailRow("Customer", customer.customer.name, emphasize = true)
+            entries.forEach { entry ->
+                DetailRow(entry.type.label, (if (entry.stampsChange > 0) "+" else "") + "${entry.stampsChange} stamps")
+            }
+            if (entries.isEmpty()) {
+                Text(
+                    "Stamps are added when the order is handed over.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

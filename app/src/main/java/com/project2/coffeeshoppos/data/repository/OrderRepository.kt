@@ -12,6 +12,7 @@ import com.project2.coffeeshoppos.domain.AuditAction
 import com.project2.coffeeshoppos.domain.CartMath
 import com.project2.coffeeshoppos.domain.Discount
 import com.project2.coffeeshoppos.domain.InventoryMath
+import com.project2.coffeeshoppos.domain.LoyaltyMath
 import com.project2.coffeeshoppos.domain.OrderDraft
 import com.project2.coffeeshoppos.domain.OrderStatus
 import com.project2.coffeeshoppos.domain.PaymentMethod
@@ -48,6 +49,7 @@ fun shortOrderNumber(orderNumber: String): String = "#" + orderNumber.substringA
 class OrderRepository(
     private val db: CoffeeShopDatabase,
     private val inventory: InventoryRepository,
+    private val loyalty: LoyaltyRepository,
     private val audit: AuditRepository,
     private val clock: Clock,
 ) {
@@ -128,14 +130,33 @@ class OrderRepository(
             ) to addOns
         }
 
+        // Loyalty: check the customer and the free drink before anything is saved.
+        val customer = draft.customerId?.let { loyalty.requireActiveCustomer(it) }
+        val rules = loyalty.getRules()
+        val reward = draft.rewardLineKey?.let { key ->
+            if (customer == null) throw UserFacingException("Choose the customer to use a free drink")
+            if (!rules.isEnabled) throw UserFacingException("The loyalty card is turned off")
+            val stamps = loyalty.getStamps(customer.id)
+            if (stamps < rules.stampsForReward) {
+                throw UserFacingException("${customer.name} has $stamps of ${rules.stampsForReward} stamps, not enough for a free drink yet")
+            }
+            val index = draft.lines.indexOfFirst { it.key == key }
+            if (index < 0) throw UserFacingException("The free drink is no longer in the cart")
+            val line = pricedLines[index].first
+            if (!loyalty.earnsStamps(line.productId)) throw UserFacingException("${line.productName} can't be the free drink")
+            val name = listOf(line.productName, line.variationName).filter { it.isNotEmpty() }.joinToString(" · ")
+            LoyaltyMath.rewardAmount(line.unitPriceCentavos, rules) to name
+        }
+        val rewardCentavos = reward?.first ?: 0L
+
         val subtotal = pricedLines.sumOf { it.first.lineTotalCentavos }
-        val discount = CartMath.discountAmount(subtotal, draft.discount)
+        val discount = CartMath.discountAfterReward(subtotal, rewardCentavos, draft.discount)
         val discountReason = draft.discountReason.trim()
         if (discount > 0 && discountReason.isEmpty()) throw UserFacingException("Give a reason for the discount")
         if (draft.discount is Discount.Percent && draft.discount.percent !in 1..100) {
             throw UserFacingException("Discount must be 1% to 100%")
         }
-        val total = subtotal - discount
+        val total = subtotal - rewardCentavos - discount
 
         val payment = draft.payment
         val change = if (payment.method == PaymentMethod.CASH) {
@@ -152,8 +173,10 @@ class OrderRepository(
                 subtotalCentavos = subtotal,
                 discountCentavos = discount,
                 discountReason = if (discount > 0) discountReason else "",
+                loyaltyRewardCentavos = rewardCentavos,
                 totalCentavos = total,
                 note = draft.note.trim(),
+                customerId = customer?.id,
                 createdAt = now,
                 updatedAt = now
             )
@@ -173,6 +196,7 @@ class OrderRepository(
                 paidAt = now
             )
         )
+        if (customer != null && reward != null) loyalty.redeem(customer.id, orderId, rules, reward.second)
         if (draft.completeNow) complete(requireNotNull(dao.getOrder(orderId)))
         PlacedOrder(orderId, orderNumber, total, change)
     }
@@ -195,7 +219,7 @@ class OrderRepository(
 
     /**
      * Cancels an order that has not been handed over. Its payment is given back as a refund
-     * record; no stock was taken out yet, so none is returned.
+     * record; no stock was taken out yet, so none is returned. A free drink goes back on the card.
      */
     suspend fun cancelOrder(orderId: Long, reason: String) = db.withTransaction {
         val order = getOrder(orderId)
@@ -203,6 +227,7 @@ class OrderRepository(
         val cleanReason = reason.trim().ifEmpty { throw UserFacingException("Give a reason for cancelling") }
         val now = clock.instant()
         refundPayments(order, "Cancelled: $cleanReason", now)
+        loyalty.reverse(order.id, order.orderNumber)
         dao.updateOrder(order.copy(status = OrderStatus.CANCELLED, cancelledAt = now, updatedAt = now))
         audit.record(
             AuditEntityType.ORDER, order.id, AuditAction.STATUS_CHANGE,
@@ -213,6 +238,7 @@ class OrderRepository(
     /**
      * Refunds a completed order in full. When [returnStock] is true (e.g. the drink was never
      * made or can be resold) its ingredients are put back at the cost they were taken out at.
+     * Stamps the order earned are taken back, and a free drink goes back on the card.
      */
     suspend fun refundOrder(orderId: Long, reason: String, returnStock: Boolean) = db.withTransaction {
         val order = getOrder(orderId)
@@ -221,6 +247,7 @@ class OrderRepository(
         val now = clock.instant()
         refundPayments(order, cleanReason, now)
         val returned = if (returnStock) inventory.returnSale(order.id, order.orderNumber) else 0L
+        loyalty.reverse(order.id, order.orderNumber)
         dao.updateOrder(order.copy(status = OrderStatus.REFUNDED, updatedAt = now))
         audit.record(
             AuditEntityType.ORDER, order.id, AuditAction.STATUS_CHANGE,
@@ -231,7 +258,7 @@ class OrderRepository(
 
     // ---------- Helpers ----------
 
-    /** Takes stock out for every line and add-on, then marks the order completed. */
+    /** Takes stock out for every line and add-on, adds loyalty stamps, then marks the order completed. */
     private suspend fun complete(order: OrderEntity) {
         val lines = dao.getLines(order.id)
         val addOnsByLine = dao.getLineAddOns(order.id).groupBy { it.orderLineId }
@@ -258,8 +285,16 @@ class OrderRepository(
         }
         val cogs = inventory.recordSale(order.id, order.orderNumber, orderUsage)
         dao.updateLines(updatedLines)
+        order.customerId?.let { customerId -> earnStamps(order, customerId, lines) }
         val now = clock.instant()
         dao.updateOrder(order.copy(status = OrderStatus.COMPLETED, cogsCentavos = cogs, completedAt = now, updatedAt = now))
+    }
+
+    private suspend fun earnStamps(order: OrderEntity, customerId: Long, lines: List<OrderLineEntity>) {
+        if (!loyalty.getRules().isEnabled) return
+        val eligibleItems = lines.filter { loyalty.earnsStamps(it.productId) }.sumOf { it.quantity }
+        val usedReward = order.loyaltyRewardCentavos > 0
+        loyalty.earn(customerId, order.id, order.orderNumber, LoyaltyMath.stampsEarned(eligibleItems, usedReward))
     }
 
     private suspend fun refundPayments(order: OrderEntity, reason: String, now: Instant) {

@@ -24,6 +24,7 @@ class ExportRepository(
     private val clock: Clock,
 ) {
     private val dao = db.exportDao()
+    private val loyaltyDao = db.loyaltyDao()
     private val formats = ExportFormats(clock.zone)
 
     /** A file name such as "orders_2026-10-01_to_2026-10-03.csv". */
@@ -54,6 +55,7 @@ class ExportRepository(
                 ExportType.PURCHASES_CSV -> formats.purchases(dao.getPurchases(from, to))
                 ExportType.MOVEMENTS_CSV -> formats.movements(dao.getMovements(from, to))
                 ExportType.STOCK_CSV -> formats.stock(dao.getIngredients())
+                ExportType.CUSTOMERS_CSV -> formats.customers(loyaltyDao.getCustomersForExport())
                 ExportType.PROFIT_SUMMARY_PDF -> error("Handled above")
             }
             stream.write(csv.build().toByteArray(Charsets.UTF_8))

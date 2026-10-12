@@ -7,6 +7,9 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.project2.coffeeshoppos.domain.RecipeTarget
+import com.project2.coffeeshoppos.ui.customers.CustomerDetailScreen
+import com.project2.coffeeshoppos.ui.customers.CustomersScreen
+import com.project2.coffeeshoppos.ui.customers.LoyaltySettingsScreen
 import com.project2.coffeeshoppos.ui.dashboard.DashboardScreen
 import com.project2.coffeeshoppos.ui.data.BackupScreen
 import com.project2.coffeeshoppos.ui.data.ExportScreen
@@ -82,6 +85,8 @@ fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) 
                 onOpenMenu = { navController.navigate(MenuRoute) },
                 onOpenAddOns = { navController.navigate(AddOnsRoute) },
                 onOpenRecipes = { navController.navigate(RecipesRoute) },
+                onOpenCustomers = { navController.navigate(CustomersRoute) },
+                onOpenLoyaltySettings = { navController.navigate(LoyaltySettingsRoute) },
                 onOpenExport = { navController.navigate(ExportRoute) },
                 onOpenBackup = { navController.navigate(BackupRoute) }
             )
@@ -130,11 +135,30 @@ fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) 
                 onOpenOrder = { id -> navController.navigate(OrderDetailRoute(id)) }
             )
         }
-        composable<OrderDetailRoute> { OrderDetailScreen(onBack = { navController.popBackStack() }) }
+        composable<OrderDetailRoute> {
+            OrderDetailScreen(
+                onBack = { navController.popBackStack() },
+                onOpenCustomer = { id -> navController.navigate(CustomerDetailRoute(id)) }
+            )
+        }
         composable<ExpenseEditRoute> { ExpenseEditScreen(onClose = { navController.popBackStack() }) }
         composable<RecurringExpensesRoute> { RecurringExpensesScreen(onBack = { navController.popBackStack() }) }
         composable<ExportRoute> { ExportScreen(onBack = { navController.popBackStack() }) }
         composable<BackupRoute> { BackupScreen(onBack = { navController.popBackStack() }) }
+        composable<CustomersRoute> {
+            CustomersScreen(
+                onBack = { navController.popBackStack() },
+                onOpenCustomer = { id -> navController.navigate(CustomerDetailRoute(id)) },
+                onOpenSettings = { navController.navigate(LoyaltySettingsRoute) }
+            )
+        }
+        composable<CustomerDetailRoute> {
+            CustomerDetailScreen(
+                onBack = { navController.popBackStack() },
+                onOpenOrder = { id -> navController.navigate(OrderDetailRoute(id)) }
+            )
+        }
+        composable<LoyaltySettingsRoute> { LoyaltySettingsScreen(onBack = { navController.popBackStack() }) }
     }
 }
 

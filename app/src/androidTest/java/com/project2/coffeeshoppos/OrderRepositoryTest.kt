@@ -8,6 +8,7 @@ import com.project2.coffeeshoppos.data.repository.AuditEntityType
 import com.project2.coffeeshoppos.data.repository.AuditRepository
 import com.project2.coffeeshoppos.data.repository.CatalogRepository
 import com.project2.coffeeshoppos.data.repository.InventoryRepository
+import com.project2.coffeeshoppos.data.repository.LoyaltyRepository
 import com.project2.coffeeshoppos.data.repository.OrderRepository
 import com.project2.coffeeshoppos.domain.AddOnDraft
 import com.project2.coffeeshoppos.domain.CartLine
@@ -65,7 +66,7 @@ class OrderRepositoryTest {
         audit = AuditRepository(db, clock)
         catalog = CatalogRepository(db, audit, clock)
         inventory = InventoryRepository(db, audit, clock)
-        orders = OrderRepository(db, inventory, audit, clock)
+        orders = OrderRepository(db, inventory, LoyaltyRepository(db, audit, clock), audit, clock)
 
         // 1 kg beans for ₱900 (₱0.90/g), 1 L milk for ₱100 (₱0.10/ml).
         beansId = inventory.addIngredient(IngredientDraft(0, "Beans", "", MeasureUnit.GRAM, 0, 1_000_000, 90_000))

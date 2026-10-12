@@ -1,11 +1,13 @@
 package com.project2.coffeeshoppos.data.export
 
+import com.project2.coffeeshoppos.data.local.dao.CustomerSummary
 import com.project2.coffeeshoppos.data.local.dao.ExportLineRow
 import com.project2.coffeeshoppos.data.local.dao.ExportMovementRow
 import com.project2.coffeeshoppos.data.local.dao.ExportOrderRow
 import com.project2.coffeeshoppos.data.local.dao.ExportPurchaseRow
 import com.project2.coffeeshoppos.data.local.entity.ExpenseEntity
 import com.project2.coffeeshoppos.data.local.entity.IngredientEntity
+import com.project2.coffeeshoppos.domain.LoyaltyMath
 import com.project2.coffeeshoppos.domain.milliToDecimal
 import com.project2.coffeeshoppos.domain.stockValueCentavos
 import java.math.RoundingMode
@@ -21,7 +23,8 @@ enum class ExportType(val label: String, val description: String, val fileStem: 
     EXPENSES_CSV("Expenses", "Operating expenses by date", "expenses", CSV),
     PURCHASES_CSV("Stock purchases", "What was bought, from whom, for how much", "stock-purchases", CSV),
     MOVEMENTS_CSV("Stock movements", "Every change to stock, with its cost", "stock-movements", CSV),
-    STOCK_CSV("Current stock", "Every ingredient's stock and value right now", "current-stock", CSV, needsRange = false);
+    STOCK_CSV("Current stock", "Every ingredient's stock and value right now", "current-stock", CSV, needsRange = false),
+    CUSTOMERS_CSV("Customers", "Loyalty customers with stamps and visits", "customers", CSV, needsRange = false);
 
     val extension: String get() = if (mimeType == CSV) "csv" else "pdf"
 }
@@ -35,7 +38,7 @@ class ExportFormats(private val zone: ZoneId) {
 
     fun orders(rows: List<ExportOrderRow>): CsvBuilder = CsvBuilder(
         listOf(
-            "Order no.", "Taken", "Completed", "Status", "Subtotal", "Discount", "Discount reason", "Total",
+            "Order no.", "Taken", "Completed", "Status", "Subtotal", "Discount", "Discount reason", "Loyalty free drink", "Total",
             "Refunded", "Ingredient cost", "Payment method", "Payment reference", "Note"
         )
     ).apply {
@@ -43,7 +46,7 @@ class ExportFormats(private val zone: ZoneId) {
             val o = row.order
             row(
                 text(o.orderNumber), text(o.createdAt.local()), text(o.completedAt.local()), text(o.status.label),
-                money(o.subtotalCentavos), money(o.discountCentavos), text(o.discountReason), money(o.totalCentavos),
+                money(o.subtotalCentavos), money(o.discountCentavos), text(o.discountReason), money(o.loyaltyRewardCentavos), money(o.totalCentavos),
                 money(row.refundedCentavos), money(o.cogsCentavos), text(row.paymentMethod?.label), text(row.paymentReference),
                 text(o.note)
             )
@@ -99,6 +102,18 @@ class ExportFormats(private val zone: ZoneId) {
                 text(m.createdAt.local()), text(row.ingredientName), text(m.type.label),
                 decimal(milliToDecimal(m.quantityChangeMilli)), decimal(milliToDecimal(m.quantityAfterMilli)),
                 text(row.ingredientUnit.symbol), money(m.costCentavos), text(m.reason)
+            )
+        }
+    }
+
+    fun customers(rows: List<CustomerSummary>): CsvBuilder = CsvBuilder(
+        listOf("Name", "Mobile number", "Stamps", "Visits", "Total spent", "Last visit", "Customer since", "Note")
+    ).apply {
+        rows.forEach { s ->
+            val c = s.customer
+            row(
+                text(c.name), text(c.phone?.let(LoyaltyMath::formatPhone)), number(s.stamps), number(s.visits),
+                money(s.totalSpentCentavos), text(s.lastVisitAt.local()), text(c.createdAt.local()), text(c.note)
             )
         }
     }

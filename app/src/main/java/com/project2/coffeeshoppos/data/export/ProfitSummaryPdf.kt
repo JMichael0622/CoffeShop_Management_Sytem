@@ -31,6 +31,7 @@ fun writeProfitSummaryPdf(report: SalesReport, generatedAt: LocalDateTime, out: 
     writer.heading("Profit")
     writer.row("Gross sales", formatPeso(s.grossSalesCentavos))
     writer.row("Discounts", "−" + formatPeso(s.discountsCentavos))
+    if (s.loyaltyRewardsCentavos > 0) writer.row("Loyalty free drinks", "−" + formatPeso(s.loyaltyRewardsCentavos))
     writer.row("Refunds", "−" + formatPeso(s.refundsCentavos))
     writer.row("Net sales", formatPeso(s.netSalesCentavos), bold = true)
     writer.row("Cost of goods", "−" + formatPeso(s.cogsCentavos))

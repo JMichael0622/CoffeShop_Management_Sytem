@@ -287,6 +287,7 @@ private fun ProfitStatement(report: SalesReport) {
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 4.dp))
             LineItem("Gross sales", formatPeso(s.grossSalesCentavos))
             LineItem("Discounts", "−" + formatPeso(s.discountsCentavos))
+            if (s.loyaltyRewardsCentavos > 0) LineItem("Loyalty free drinks", "−" + formatPeso(s.loyaltyRewardsCentavos))
             LineItem("Refunds", "−" + formatPeso(s.refundsCentavos))
             LineItem("Net sales", formatPeso(s.netSalesCentavos), bold = true)
             LineItem("Cost of goods", "−" + formatPeso(s.cogsCentavos))

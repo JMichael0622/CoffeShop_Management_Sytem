@@ -13,6 +13,8 @@ data class PosProduct(
     /** In display order; the first is the default. Never empty. */
     val sizes: List<PosSize>,
     val addOns: List<PosAddOn>,
+    /** Earns loyalty stamps and can be the free drink (set per category). */
+    val earnsStamps: Boolean = true,
 )
 
 data class PosSize(val id: Long, val name: String, val priceCentavos: Long)
@@ -49,6 +51,8 @@ data class PricedCartLine(
     val unitPriceCentavos: Long,
     val addOns: List<PricedAddOn>,
     val unavailableReason: String? = null,
+    /** Earns loyalty stamps and can be the free drink. */
+    val earnsStamps: Boolean = false,
 ) {
     val addOnsUnitPriceCentavos: Long get() = addOns.sumOf { it.priceCentavos * it.quantityPerItem }
     val lineTotalCentavos: Long get() = (unitPriceCentavos + addOnsUnitPriceCentavos) * line.quantity
@@ -74,7 +78,8 @@ fun priceCartLine(line: CartLine, menu: PosMenu): PricedCartLine {
         isOnlySize = product.sizes.size == 1,
         unitPriceCentavos = size.priceCentavos,
         addOns = addOns,
-        unavailableReason = if (missingAddOn) "An add-on is no longer available" else null
+        unavailableReason = if (missingAddOn) "An add-on is no longer available" else null,
+        earnsStamps = product.earnsStamps
     )
 }
 
@@ -99,6 +104,13 @@ object CartMath {
     }.coerceIn(0, subtotalCentavos)
 
     fun total(subtotalCentavos: Long, discount: Discount): Long = subtotalCentavos - discountAmount(subtotalCentavos, discount)
+
+    /**
+     * The discount when a loyalty free drink is also used. The free drink comes off first, so a
+     * percentage discount (e.g. senior citizen) applies only to what the customer actually pays.
+     */
+    fun discountAfterReward(subtotalCentavos: Long, rewardCentavos: Long, discount: Discount): Long =
+        discountAmount(subtotalCentavos - rewardCentavos.coerceIn(0, subtotalCentavos), discount)
 
     /** Quick cash buttons: the exact amount, then the next round ₱50, ₱100, ₱500 and ₱1,000. */
     fun suggestedCash(totalCentavos: Long): List<Long> {
@@ -127,6 +139,10 @@ data class OrderDraft(
     val payment: PaymentInput,
     /** For grab-and-go items: skip the queue and take the stock out right away. */
     val completeNow: Boolean,
+    /** The loyalty customer, if the cashier attached one. They earn stamps when the order is completed. */
+    val customerId: Long? = null,
+    /** [CartLine.key] of the item to give free from the customer's loyalty card, if any. */
+    val rewardLineKey: Long? = null,
 )
 
 data class PlacedOrder(val orderId: Long, val orderNumber: String, val totalCentavos: Long, val changeCentavos: Long?)

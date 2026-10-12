@@ -3,6 +3,7 @@ package com.project2.coffeeshoppos.ui.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.project2.coffeeshoppos.data.repository.InventoryRepository
+import com.project2.coffeeshoppos.data.repository.LoyaltyRepository
 import com.project2.coffeeshoppos.data.repository.OrderRepository
 import com.project2.coffeeshoppos.data.repository.ReportRepository
 import com.project2.coffeeshoppos.data.repository.shortOrderNumber
@@ -31,6 +32,7 @@ class DashboardViewModel(
     private val reportRepository: ReportRepository,
     inventoryRepository: InventoryRepository,
     orderRepository: OrderRepository,
+    loyaltyRepository: LoyaltyRepository,
 ) : ViewModel() {
     /** Re-checks the date every minute, so a dashboard left open overnight rolls over to the new day. */
     private val today = flow {
@@ -44,7 +46,8 @@ class DashboardViewModel(
         today.flatMapLatest { reportRepository.observeReport(DateRange.day(it)) },
         inventoryRepository.observeIngredients(),
         orderRepository.observeRecentOrders(limit = RECENT_ORDERS),
-    ) { report, ingredients, recent ->
+        today.flatMapLatest { loyaltyRepository.observeCustomersServedOn(it) },
+    ) { report, ingredients, recent, loyaltyCustomers ->
         val summary = report.summary
         val zone = ZoneId.systemDefault()
         val needingStock = ingredients
@@ -53,7 +56,9 @@ class DashboardViewModel(
         DashboardUiState(
             grossSalesCentavos = summary.grossSalesCentavos,
             completedOrders = summary.orderCount,
-            discountsAndRefundsCentavos = summary.discountsCentavos + summary.refundsCentavos,
+            loyaltyCustomers = loyaltyCustomers,
+            loyaltyRewardsCentavos = summary.loyaltyRewardsCentavos,
+            discountsAndRefundsCentavos = summary.discountsCentavos + summary.loyaltyRewardsCentavos + summary.refundsCentavos,
             operatingExpensesCentavos = summary.operatingExpensesCentavos,
             cogsCentavos = summary.cogsCentavos,
             estimatedProfitCentavos = summary.netProfitCentavos,

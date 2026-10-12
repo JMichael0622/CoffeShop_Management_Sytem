@@ -28,6 +28,15 @@ enum class MovementType(val label: String) {
     REFUND_RETURN("Returned from refund"),
 }
 
+/** Why a customer's stamps changed. Every change gets one loyalty entry. */
+enum class LoyaltyEntryType(val label: String) {
+    EARNED("Earned"),
+    REDEEMED("Free drink"),
+    EARNED_REVERSED("Taken back (refund)"),
+    REDEEM_RETURNED("Free drink given back"),
+    ADJUSTMENT("Manual adjustment"),
+}
+
 enum class ExpenseCategory(val label: String) {
     RENT("Rent"),
     ELECTRICITY("Electricity"),

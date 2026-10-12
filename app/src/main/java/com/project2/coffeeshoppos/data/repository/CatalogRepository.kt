@@ -87,6 +87,7 @@ class CatalogRepository(
         val addOnsById = addOns.filter { it.isAvailable }.associateBy { it.id }
         val addOnIdsByProduct = links.groupBy({ it.productId }, { it.addOnId })
         val categoryOrder = categories.withIndex().associate { (index, category) -> category.id to index }
+        val categoryEarnsStamps = categories.associate { it.id to it.earnsStamps }
         PosMenu(
             categories = categories.map { it.id to it.name },
             products = products
@@ -106,7 +107,8 @@ class CatalogRepository(
                         addOns = addOnIdsByProduct[product.id].orEmpty()
                             .mapNotNull(addOnsById::get)
                             .sortedBy { it.name.lowercase() }
-                            .map { PosAddOn(it.id, it.name, it.priceCentavos) }
+                            .map { PosAddOn(it.id, it.name, it.priceCentavos) },
+                        earnsStamps = product.categoryId?.let { categoryEarnsStamps[it] } ?: true
                     )
                 }
         )

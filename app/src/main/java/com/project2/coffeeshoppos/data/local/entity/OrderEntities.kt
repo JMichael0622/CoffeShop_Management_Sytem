@@ -1,5 +1,6 @@
 package com.project2.coffeeshoppos.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -13,11 +14,20 @@ import java.time.Instant
 
 @Entity(
     tableName = "orders",
+    foreignKeys = [
+        ForeignKey(
+            entity = CustomerEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["customerId"],
+            onDelete = ForeignKey.SET_NULL
+        )
+    ],
     indices = [
         Index(value = ["orderNumber"], unique = true),
         Index("status"),
         Index("createdAt"),
-        Index("completedAt")
+        Index("completedAt"),
+        Index("customerId")
     ]
 )
 data class OrderEntity(
@@ -27,10 +37,15 @@ data class OrderEntity(
     val subtotalCentavos: Long,
     val discountCentavos: Long = 0,
     val discountReason: String = "",
+    /** Taken off for a free drink from the customer's loyalty card; separate from [discountCentavos]. */
+    @ColumnInfo(defaultValue = "0") val loyaltyRewardCentavos: Long = 0,
+    /** Subtotal minus discount minus loyalty reward. */
     val totalCentavos: Long,
     /** Cost of goods sold, fixed when the order is completed. Null before completion. */
     val cogsCentavos: Long? = null,
     val note: String = "",
+    /** The loyalty customer this order belongs to, if the cashier attached one. */
+    val customerId: Long? = null,
     val createdAt: Instant,
     val updatedAt: Instant,
     val completedAt: Instant? = null,

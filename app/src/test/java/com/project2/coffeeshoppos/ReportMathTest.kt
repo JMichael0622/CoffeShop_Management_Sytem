@@ -59,6 +59,19 @@ class ReportMathTest {
     }
 
     @Test
+    fun loyaltyFreeDrinksLowerNetSales() {
+        // ₱300 of drinks, one ₱120 drink free from the loyalty card.
+        val free = order(subtotal = 30_000, cogs = 9_000, completed = "2026-10-03T01:00:00Z")
+            .copy(loyaltyRewardCentavos = 12_000, totalCentavos = 18_000)
+        val summary = ReportMath.summarize(listOf(free), emptyList(), emptyMap(), emptyList())
+
+        assertEquals(12_000L, summary.loyaltyRewardsCentavos)
+        assertEquals(18_000L, summary.netSalesCentavos)
+        assertEquals(9_000L, summary.grossProfitCentavos)
+        assertEquals(18_000L, summary.averageOrderCentavos)
+    }
+
+    @Test
     fun emptyPeriodHasNoAverage() {
         val summary = ReportMath.summarize(emptyList(), emptyList(), emptyMap(), emptyList())
         assertEquals(0L, summary.netProfitCentavos)

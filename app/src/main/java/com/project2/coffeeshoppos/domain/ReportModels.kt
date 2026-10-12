@@ -47,7 +47,8 @@ enum class ReportPeriod(val label: String) {
  * The profit figures for a period. All money is whole centavos.
  *
  * - Gross sales: item totals of orders completed in the period, before discounts.
- * - Net sales: gross − discounts − refunds given in the period. Cancelled orders never count.
+ * - Net sales: gross − discounts − loyalty free drinks − refunds given in the period.
+ *   Cancelled orders never count.
  * - Cost of goods: ingredient cost fixed at completion, minus stock returned by refunds.
  * - Stock losses: wastage plus stock-count adjustments at average cost (extra stock found lowers it).
  * - Net profit: net sales − cost of goods − stock losses − operating expenses.
@@ -62,10 +63,12 @@ data class ProfitSummary(
     val operatingExpensesCentavos: Long,
     /** Orders completed in the period, including ones refunded since. */
     val orderCount: Int,
+    /** Taken off for loyalty free drinks. */
+    val loyaltyRewardsCentavos: Long = 0,
 ) {
     val grossProfitCentavos: Long get() = netSalesCentavos - cogsCentavos
     val netProfitCentavos: Long get() = grossProfitCentavos - stockLossCentavos - operatingExpensesCentavos
-    val averageOrderCentavos: Long? get() = if (orderCount == 0) null else (grossSalesCentavos - discountsCentavos) / orderCount
+    val averageOrderCentavos: Long? get() = if (orderCount == 0) null else (grossSalesCentavos - discountsCentavos - loyaltyRewardsCentavos) / orderCount
 }
 
 /** One day in a multi-day report. */
@@ -90,6 +93,7 @@ object ReportMath {
     ): ProfitSummary {
         val gross = orders.sumOf { it.subtotalCentavos }
         val discounts = orders.sumOf { it.discountCentavos }
+        val rewards = orders.sumOf { it.loyaltyRewardCentavos }
         val refunds = saleRefunds.sumOf { it.amountCentavos }
         // Ledger costs are negative for stock leaving and positive for stock coming back.
         val returnedToStock = movementCosts[MovementType.REFUND_RETURN] ?: 0
@@ -98,11 +102,12 @@ object ReportMath {
             grossSalesCentavos = gross,
             discountsCentavos = discounts,
             refundsCentavos = refunds,
-            netSalesCentavos = gross - discounts - refunds,
+            netSalesCentavos = gross - discounts - rewards - refunds,
             cogsCentavos = orders.sumOf { it.cogsCentavos ?: 0 } - returnedToStock,
             stockLossCentavos = stockLoss,
             operatingExpensesCentavos = expenses.sumOf { it.amountCentavos },
-            orderCount = orders.size
+            orderCount = orders.size,
+            loyaltyRewardsCentavos = rewards
         )
     }
 

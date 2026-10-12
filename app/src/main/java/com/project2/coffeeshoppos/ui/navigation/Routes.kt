@@ -47,6 +47,11 @@ import kotlinx.serialization.Serializable
 @Serializable object ExportRoute
 @Serializable object BackupRoute
 
+// Loyalty (Phase 9)
+@Serializable object CustomersRoute
+@Serializable data class CustomerDetailRoute(val customerId: Long)
+@Serializable object LoyaltySettingsRoute
+
 /** The five tabs in the bottom navigation bar. */
 enum class TopLevelDestination(
     val route: Any,

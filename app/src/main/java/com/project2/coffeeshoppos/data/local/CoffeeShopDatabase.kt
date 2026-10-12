@@ -1,6 +1,7 @@
 package com.project2.coffeeshoppos.data.local
 
 import android.content.Context
+import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -11,15 +12,19 @@ import com.project2.coffeeshoppos.data.local.dao.CatalogDao
 import com.project2.coffeeshoppos.data.local.dao.ExpenseDao
 import com.project2.coffeeshoppos.data.local.dao.ExportDao
 import com.project2.coffeeshoppos.data.local.dao.InventoryDao
+import com.project2.coffeeshoppos.data.local.dao.LoyaltyDao
 import com.project2.coffeeshoppos.data.local.dao.OrderDao
 import com.project2.coffeeshoppos.data.local.dao.ReportDao
 import com.project2.coffeeshoppos.data.local.entity.AddOnEntity
 import com.project2.coffeeshoppos.data.local.entity.AddOnRecipeItemEntity
 import com.project2.coffeeshoppos.data.local.entity.AuditRecordEntity
 import com.project2.coffeeshoppos.data.local.entity.CategoryEntity
+import com.project2.coffeeshoppos.data.local.entity.CustomerEntity
 import com.project2.coffeeshoppos.data.local.entity.ExpenseEntity
 import com.project2.coffeeshoppos.data.local.entity.IngredientEntity
 import com.project2.coffeeshoppos.data.local.entity.InventoryMovementEntity
+import com.project2.coffeeshoppos.data.local.entity.LoyaltyEntryEntity
+import com.project2.coffeeshoppos.data.local.entity.LoyaltySettingsEntity
 import com.project2.coffeeshoppos.data.local.entity.OrderEntity
 import com.project2.coffeeshoppos.data.local.entity.OrderLineAddOnEntity
 import com.project2.coffeeshoppos.data.local.entity.OrderLineEntity
@@ -35,9 +40,15 @@ import com.project2.coffeeshoppos.data.local.entity.VariationRecipeItemEntity
 /**
  * The app's single SQLite database, stored privately on the phone.
  *
- * When a table changes: increase [version], add a [Migration] to [MIGRATIONS], and build.
- * Room then saves the new schema JSON in app/schemas/. Never use destructive migration here,
- * because that would erase the shop's records.
+ * When a table changes: increase [version], then either add an [AutoMigration] (for added
+ * tables and columns) or a [Migration] in [MIGRATIONS] (for anything Room cannot work out), and
+ * build. Room then saves the new schema JSON in app/schemas/. Never use destructive migration
+ * here, because that would erase the shop's records.
+ *
+ * Version history:
+ * 1. First release.
+ * 2. Loyalty card: customers, loyalty_entries, loyalty_settings; orders.customerId and
+ *    orders.loyaltyRewardCentavos; categories.earnsStamps.
  */
 @Database(
     entities = [
@@ -59,9 +70,15 @@ import com.project2.coffeeshoppos.data.local.entity.VariationRecipeItemEntity
         ExpenseEntity::class,
         RecurringExpenseTemplateEntity::class,
         AuditRecordEntity::class,
+        CustomerEntity::class,
+        LoyaltyEntryEntity::class,
+        LoyaltySettingsEntity::class,
     ],
     version = CoffeeShopDatabase.VERSION,
-    exportSchema = true
+    exportSchema = true,
+    autoMigrations = [
+        AutoMigration(from = 1, to = 2),
+    ]
 )
 @TypeConverters(Converters::class)
 abstract class CoffeeShopDatabase : RoomDatabase() {
@@ -72,9 +89,10 @@ abstract class CoffeeShopDatabase : RoomDatabase() {
     abstract fun auditDao(): AuditDao
     abstract fun reportDao(): ReportDao
     abstract fun exportDao(): ExportDao
+    abstract fun loyaltyDao(): LoyaltyDao
 
     companion object {
-        const val VERSION = 1
+        const val VERSION = 2
         const val FILE_NAME = "coffee_shop.db"
 
         /** Upgrades from older database versions, added as the schema evolves. */

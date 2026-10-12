@@ -9,7 +9,11 @@ package com.project2.coffeeshoppos.ui.dashboard
 data class DashboardUiState(
     val grossSalesCentavos: Long? = null,
     val completedOrders: Int? = null,
+    /** Different loyalty customers served today. */
+    val loyaltyCustomers: Int? = null,
+    /** Includes loyalty free drinks. */
     val discountsAndRefundsCentavos: Long? = null,
+    val loyaltyRewardsCentavos: Long? = null,
     val operatingExpensesCentavos: Long? = null,
     val cogsCentavos: Long? = null,
     val estimatedProfitCentavos: Long? = null,

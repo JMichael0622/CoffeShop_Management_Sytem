@@ -12,6 +12,7 @@ import com.project2.coffeeshoppos.data.local.CoffeeShopDatabase
 import com.project2.coffeeshoppos.data.repository.AuditRepository
 import com.project2.coffeeshoppos.data.repository.CatalogRepository
 import com.project2.coffeeshoppos.data.repository.InventoryRepository
+import com.project2.coffeeshoppos.data.repository.LoyaltyRepository
 import com.project2.coffeeshoppos.data.repository.OrderRepository
 import com.project2.coffeeshoppos.data.repository.ReportRepository
 import com.project2.coffeeshoppos.domain.CartLine
@@ -72,7 +73,7 @@ class DataExportBackupTest {
     private suspend fun sellLatte(database: CoffeeShopDatabase, name: String = "Latte"): Long {
         val audit = AuditRepository(database, clock)
         val catalog = CatalogRepository(database, audit, clock)
-        val orders = OrderRepository(database, InventoryRepository(database, audit, clock), audit, clock)
+        val orders = OrderRepository(database, InventoryRepository(database, audit, clock), LoyaltyRepository(database, audit, clock), audit, clock)
         val productId = catalog.saveProduct(ProductDraft(0, name, null, "", true, listOf(SizeInput(0, "Regular", 12_000)), emptySet()))
         val sizeId = catalog.getProductForEdit(productId)!!.sizes.single().id
         return orders.placeOrder(
@@ -96,7 +97,7 @@ class DataExportBackupTest {
         assertEquals(1, rows)
         val lines = csvFile.readText().removePrefix("﻿").split("\r\n")
         assertTrue(lines[0].startsWith("Order no.,Taken,Completed,Status"))
-        assertTrue(lines[1].startsWith("261003-001,2026-10-03 10:00,2026-10-03 10:00,Completed,240.00,0.00,,240.00,0.00"))
+        assertTrue(lines[1].startsWith("261003-001,2026-10-03 10:00,2026-10-03 10:00,Completed,240.00,0.00,,0.00,240.00,0.00"))
         assertTrue(lines[1].endsWith("Cash,,\"Table, 4\""))
 
         val pdfFile = File(dir, "summary.pdf")

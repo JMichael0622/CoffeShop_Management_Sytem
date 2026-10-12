@@ -112,6 +112,9 @@ private fun DashboardContent(
                     label = "Completed orders",
                     value = state.completedOrders.asCount(),
                     icon = R.drawable.ic_receipt,
+                    supportingText = state.loyaltyCustomers?.takeIf { it > 0 }?.let {
+                        "$it loyalty " + if (it == 1) "customer" else "customers"
+                    },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -122,6 +125,7 @@ private fun DashboardContent(
                     label = "Discounts & refunds",
                     value = state.discountsAndRefundsCentavos.asPeso(),
                     icon = R.drawable.ic_discount,
+                    supportingText = state.loyaltyRewardsCentavos?.takeIf { it > 0 }?.let { "Incl. ${formatPeso(it)} free drinks" },
                     modifier = Modifier.weight(1f)
                 )
                 MetricCard(

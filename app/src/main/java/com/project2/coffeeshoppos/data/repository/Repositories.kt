@@ -19,6 +19,8 @@ object AuditEntityType {
     const val ORDER = "order"
     const val EXPENSE = "expense"
     const val RECURRING_EXPENSE = "recurring_expense"
+    const val CUSTOMER = "customer"
+    const val LOYALTY_SETTINGS = "loyalty_settings"
 }
 
 /**

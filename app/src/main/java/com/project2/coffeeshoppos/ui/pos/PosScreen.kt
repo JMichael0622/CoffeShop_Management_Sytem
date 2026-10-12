@@ -166,10 +166,12 @@ fun PosScreen(
         )
     }
 
+    CustomerPickerDialog(state, viewModel)
+
     if (confirmClear) {
         ConfirmDialog(
             title = "Clear this order?",
-            message = "All items, the discount and payment details will be removed.",
+            message = "All items, the discount, customer and payment details will be removed.",
             confirmLabel = "Clear",
             destructive = true,
             onConfirm = { confirmClear = false; viewModel.clearCart() },
@@ -186,6 +188,9 @@ fun PosScreen(
                     Text("Total ${formatPeso(placed.totalCentavos)}", style = MaterialTheme.typography.titleMedium)
                     placed.changeCentavos?.let {
                         Text("Change: ${formatPeso(it)}", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
+                    }
+                    state.placedLoyaltyNote?.let {
+                        Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             },
@@ -374,10 +379,14 @@ private fun CartContent(state: PosUiState, viewModel: PosViewModel, onEditDiscou
                 }
             }
         }
+        if (state.rules.isEnabled || state.customer != null) {
+            item { LoyaltyCartCard(state, viewModel) }
+        }
         item {
             CoffeeCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     TotalRow("Subtotal", formatPeso(state.subtotalCentavos))
+                    if (state.rewardCentavos > 0) TotalRow("Loyalty free drink", "−${formatPeso(state.rewardCentavos)}")
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text("Discount", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

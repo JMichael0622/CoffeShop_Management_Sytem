@@ -15,6 +15,9 @@ import com.project2.coffeeshoppos.ui.expenses.ExpensesViewModel
 import com.project2.coffeeshoppos.ui.expenses.RecurringExpensesViewModel
 import com.project2.coffeeshoppos.ui.inventory.IngredientDetailViewModel
 import com.project2.coffeeshoppos.ui.inventory.IngredientEditViewModel
+import com.project2.coffeeshoppos.ui.customers.CustomerDetailViewModel
+import com.project2.coffeeshoppos.ui.customers.CustomersViewModel
+import com.project2.coffeeshoppos.ui.customers.LoyaltySettingsViewModel
 import com.project2.coffeeshoppos.ui.inventory.InventoryViewModel
 import com.project2.coffeeshoppos.ui.inventory.RecipeEditViewModel
 import com.project2.coffeeshoppos.ui.inventory.RecipesViewModel
@@ -58,13 +61,13 @@ object AppViewModelProvider {
         initializer { RecipeEditViewModel(createSavedStateHandle(), appContainer().inventoryRepository) }
         initializer {
             val container = appContainer()
-            PosViewModel(container.catalogRepository, container.orderRepository)
+            PosViewModel(container.catalogRepository, container.orderRepository, container.loyaltyRepository)
         }
         initializer {
             val container = appContainer()
             OrdersViewModel(container.orderRepository, container.clock)
         }
-        initializer { OrderDetailViewModel(createSavedStateHandle(), appContainer().orderRepository) }
+        initializer { OrderDetailViewModel(createSavedStateHandle(), appContainer().orderRepository, appContainer().loyaltyRepository) }
         initializer {
             val container = appContainer()
             ExpensesViewModel(container.expenseRepository, container.clock)
@@ -80,9 +83,12 @@ object AppViewModelProvider {
             ExportViewModel(container.exportRepository, container.reportRepository)
         }
         initializer { BackupViewModel(appContainer().backupManager) }
+        initializer { CustomersViewModel(appContainer().loyaltyRepository) }
+        initializer { CustomerDetailViewModel(createSavedStateHandle(), appContainer().loyaltyRepository) }
+        initializer { LoyaltySettingsViewModel(appContainer().loyaltyRepository) }
         initializer {
             val container = appContainer()
-            DashboardViewModel(container.reportRepository, container.inventoryRepository, container.orderRepository)
+            DashboardViewModel(container.reportRepository, container.inventoryRepository, container.orderRepository, container.loyaltyRepository)
         }
     }
 }

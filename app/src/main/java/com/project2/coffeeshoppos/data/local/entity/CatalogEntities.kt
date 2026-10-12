@@ -1,5 +1,6 @@
 package com.project2.coffeeshoppos.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -18,6 +19,8 @@ data class CategoryEntity(
     val name: String,
     val sortOrder: Int = 0,
     val isArchived: Boolean = false,
+    /** Whether items in this category earn loyalty stamps and can be taken as the free drink. */
+    @ColumnInfo(defaultValue = "1") val earnsStamps: Boolean = true,
     val createdAt: Instant,
 )
 
