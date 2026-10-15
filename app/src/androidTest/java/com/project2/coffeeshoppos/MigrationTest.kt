@@ -54,6 +54,25 @@ class MigrationTest {
         }
     }
 
+    @Test
+    fun version2To3KeepsDataAndAddsAccounts() {
+        helper.createDatabase(dbName, 2).use { db ->
+            db.execSQL(
+                "INSERT INTO customers (id, name, phone, note, isDeleted, createdAt, updatedAt) " +
+                    "VALUES (1, 'Ana Cruz', '09171234567', '', 0, 1000, 1000)"
+            )
+        }
+
+        helper.runMigrationsAndValidate(dbName, 3, true).use { db ->
+            db.query("SELECT name FROM customers WHERE id = 1").use { c ->
+                assertTrue(c.moveToFirst())
+                assertEquals("Ana Cruz", c.getString(0))
+            }
+            // No accounts yet: the app asks for the admin account on next launch.
+            db.query("SELECT COUNT(*) FROM users").use { c -> c.moveToFirst(); assertEquals(0, c.getInt(0)) }
+        }
+    }
+
     /** The real app setup (with every migration registered) opens an upgraded file. */
     @Test
     fun appOpensUpgradedDatabase() = runBlocking {

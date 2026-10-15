@@ -36,6 +36,8 @@ import com.project2.coffeeshoppos.R
 import com.project2.coffeeshoppos.data.local.dao.CustomerSummary
 import com.project2.coffeeshoppos.domain.LoyaltyMath
 import com.project2.coffeeshoppos.domain.LoyaltyRules
+import com.project2.coffeeshoppos.domain.Permission
+import com.project2.coffeeshoppos.ui.auth.LocalCurrentUser
 import com.project2.coffeeshoppos.ui.AppViewModelProvider
 import com.project2.coffeeshoppos.ui.components.CoffeeCard
 import com.project2.coffeeshoppos.ui.components.EmptyState
@@ -69,8 +71,10 @@ fun CustomersScreen(
         onBack = onBack,
         snackbarHostState = snackbarHostState,
         actions = {
-            IconButton(onClick = onOpenSettings) {
-                Icon(painterResource(R.drawable.ic_settings), contentDescription = "Loyalty card settings")
+            if (LocalCurrentUser.current.can(Permission.LOYALTY_SETTINGS)) {
+                IconButton(onClick = onOpenSettings) {
+                    Icon(painterResource(R.drawable.ic_settings), contentDescription = "Loyalty card settings")
+                }
             }
         },
         floatingActionButton = {
@@ -93,7 +97,7 @@ fun CustomersScreen(
                     if (state.rules.isEnabled) {
                         "Customers collect a stamp for each drink. ${state.rules.stampsForReward} stamps get a free drink."
                     } else {
-                        "The loyalty card is turned off. Turn it on in settings (top right)."
+                        "The loyalty card is turned off. An admin can turn it on in Manage › Loyalty card."
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant

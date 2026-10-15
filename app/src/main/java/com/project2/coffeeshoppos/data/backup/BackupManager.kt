@@ -4,6 +4,7 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.net.Uri
 import com.project2.coffeeshoppos.data.local.CoffeeShopDatabase
+import com.project2.coffeeshoppos.domain.BackupFrequency
 import com.project2.coffeeshoppos.domain.UserFacingException
 import java.io.File
 import java.time.Clock
@@ -11,6 +12,9 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 
 /** What a backup file contains, shown before the owner confirms a restore. */
@@ -48,6 +52,22 @@ class BackupManager(
     val safetyCopy: File get() = File(File(context.filesDir, "backups"), "before-restore-$databaseName")
 
     val lastBackupAt: Instant? get() = prefs.getLong(KEY_LAST_BACKUP, 0).takeIf { it > 0 }?.let(Instant::ofEpochMilli)
+
+    private val _lastBackup = MutableStateFlow(lastBackupAt)
+    /** [lastBackupAt] as a flow, so reminders disappear as soon as a backup is saved. */
+    val lastBackup: StateFlow<Instant?> = _lastBackup.asStateFlow()
+
+    private val _frequency = MutableStateFlow(
+        prefs.getString(KEY_FREQUENCY, null)?.let { name -> BackupFrequency.entries.firstOrNull { it.name == name } }
+            ?: BackupFrequency.WEEKLY
+    )
+    /** How often to remind people to save a backup. */
+    val frequency: StateFlow<BackupFrequency> = _frequency.asStateFlow()
+
+    fun setFrequency(value: BackupFrequency) {
+        prefs.edit().putString(KEY_FREQUENCY, value.name).apply()
+        _frequency.value = value
+    }
     val lastRestoreAt: Instant? get() = prefs.getLong(KEY_LAST_RESTORE, 0).takeIf { it > 0 }?.let(Instant::ofEpochMilli)
 
     fun suggestedFileName(): String = "coffeeshop-backup_${LocalDateTime.now(clock).format(FILE_STAMP)}.db"
@@ -61,6 +81,7 @@ class BackupManager(
                 ?: throw UserFacingException("Could not open the file to save to")
             output.use { out -> snapshot.inputStream().use { it.copyTo(out) } }
             prefs.edit().putLong(KEY_LAST_BACKUP, clock.millis()).apply()
+            _lastBackup.value = lastBackupAt
         } finally {
             snapshot.delete()
         }
@@ -168,6 +189,7 @@ class BackupManager(
 
     private companion object {
         const val KEY_LAST_BACKUP = "last_backup_at"
+        const val KEY_FREQUENCY = "reminder_frequency"
         const val KEY_LAST_RESTORE = "last_restore_at"
         val FILE_STAMP: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HHmm")
         val SQLITE_HEADER = "SQLite format 3\u0000".toByteArray(Charsets.US_ASCII)

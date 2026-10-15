@@ -15,6 +15,8 @@ import com.project2.coffeeshoppos.ui.expenses.ExpensesViewModel
 import com.project2.coffeeshoppos.ui.expenses.RecurringExpensesViewModel
 import com.project2.coffeeshoppos.ui.inventory.IngredientDetailViewModel
 import com.project2.coffeeshoppos.ui.inventory.IngredientEditViewModel
+import com.project2.coffeeshoppos.ui.accounts.AccountsViewModel
+import com.project2.coffeeshoppos.ui.auth.AuthViewModel
 import com.project2.coffeeshoppos.ui.customers.CustomerDetailViewModel
 import com.project2.coffeeshoppos.ui.customers.CustomersViewModel
 import com.project2.coffeeshoppos.ui.customers.LoyaltySettingsViewModel
@@ -83,12 +85,17 @@ object AppViewModelProvider {
             ExportViewModel(container.exportRepository, container.reportRepository)
         }
         initializer { BackupViewModel(appContainer().backupManager) }
+        initializer { AuthViewModel(appContainer().accountRepository, appContainer().sessionManager) }
+        initializer { AccountsViewModel(appContainer().accountRepository, appContainer().sessionManager) }
         initializer { CustomersViewModel(appContainer().loyaltyRepository) }
         initializer { CustomerDetailViewModel(createSavedStateHandle(), appContainer().loyaltyRepository) }
         initializer { LoyaltySettingsViewModel(appContainer().loyaltyRepository) }
         initializer {
             val container = appContainer()
-            DashboardViewModel(container.reportRepository, container.inventoryRepository, container.orderRepository, container.loyaltyRepository)
+            DashboardViewModel(
+                container.reportRepository, container.inventoryRepository, container.orderRepository,
+                container.loyaltyRepository, container.backupManager
+            )
         }
     }
 }

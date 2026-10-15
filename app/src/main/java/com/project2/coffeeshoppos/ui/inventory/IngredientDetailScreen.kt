@@ -45,6 +45,8 @@ import com.project2.coffeeshoppos.R
 import com.project2.coffeeshoppos.data.local.entity.IngredientEntity
 import com.project2.coffeeshoppos.data.local.entity.InventoryMovementEntity
 import com.project2.coffeeshoppos.domain.MovementType
+import com.project2.coffeeshoppos.domain.Permission
+import com.project2.coffeeshoppos.ui.auth.LocalCurrentUser
 import com.project2.coffeeshoppos.domain.formatQuantity
 import com.project2.coffeeshoppos.domain.formatQuantityChange
 import com.project2.coffeeshoppos.domain.formatUnitCost
@@ -200,8 +202,10 @@ private fun StockActions(onAction: (StockAction) -> Unit) {
                 Text("Stock count")
             }
         }
-        OutlinedButton(onClick = { onAction(StockAction.CORRECT_COST) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
-            Text("Correct cost")
+        if (LocalCurrentUser.current.can(Permission.CORRECT_COST)) {
+            OutlinedButton(onClick = { onAction(StockAction.CORRECT_COST) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                Text("Correct cost")
+            }
         }
     }
 }

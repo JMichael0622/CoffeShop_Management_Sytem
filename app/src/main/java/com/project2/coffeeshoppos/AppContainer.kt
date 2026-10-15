@@ -4,6 +4,7 @@ import android.content.Context
 import com.project2.coffeeshoppos.data.backup.BackupManager
 import com.project2.coffeeshoppos.data.export.ExportRepository
 import com.project2.coffeeshoppos.data.local.CoffeeShopDatabase
+import com.project2.coffeeshoppos.data.repository.AccountRepository
 import com.project2.coffeeshoppos.data.repository.AuditRepository
 import com.project2.coffeeshoppos.data.repository.CatalogRepository
 import com.project2.coffeeshoppos.data.repository.ExpenseRepository
@@ -11,6 +12,7 @@ import com.project2.coffeeshoppos.data.repository.InventoryRepository
 import com.project2.coffeeshoppos.data.repository.LoyaltyRepository
 import com.project2.coffeeshoppos.data.repository.OrderRepository
 import com.project2.coffeeshoppos.data.repository.ReportRepository
+import com.project2.coffeeshoppos.data.repository.SessionManager
 import java.time.Clock
 
 /**
@@ -34,6 +36,9 @@ class AppContainer(context: Context) {
     val loyaltyRepository by lazy { LoyaltyRepository(database, auditRepository, clock) }
     val expenseRepository by lazy { ExpenseRepository(database, auditRepository, clock) }
     val reportRepository by lazy { ReportRepository(database, clock) }
-    val auditRepository by lazy { AuditRepository(database, clock) }
+    // Explicit types: the audit log and the session refer to each other (audit records say who is signed in).
+    val auditRepository: AuditRepository by lazy { AuditRepository(database, clock) { sessionManager.current.value } }
+    val accountRepository: AccountRepository by lazy { AccountRepository(database, auditRepository, clock) }
+    val sessionManager: SessionManager by lazy { SessionManager(accountRepository, clock) }
     val exportRepository by lazy { ExportRepository(context, database, reportRepository, clock) }
 }

@@ -17,6 +17,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -41,6 +42,8 @@ import com.project2.coffeeshoppos.ui.components.MetricCard
 import com.project2.coffeeshoppos.ui.components.SectionHeader
 import com.project2.coffeeshoppos.ui.theme.CoffeeShopPOSTheme
 import com.project2.coffeeshoppos.ui.theme.LocalCoffeeExtraColors
+import com.project2.coffeeshoppos.domain.Permission
+import com.project2.coffeeshoppos.ui.auth.LocalCurrentUser
 import com.project2.coffeeshoppos.util.formatPeso
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -58,6 +61,8 @@ fun DashboardScreen(
     onRecordExpense: () -> Unit,
     onOpenManage: () -> Unit,
     onOpenOrder: (Long) -> Unit,
+    onOpenBackup: () -> Unit,
+    onSignOut: () -> Unit,
     viewModel: DashboardViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -67,7 +72,9 @@ fun DashboardScreen(
         onAddStock = onAddStock,
         onRecordExpense = onRecordExpense,
         onOpenManage = onOpenManage,
-        onOpenOrder = onOpenOrder
+        onOpenOrder = onOpenOrder,
+        onOpenBackup = onOpenBackup,
+        onSignOut = onSignOut
     )
 }
 
@@ -79,8 +86,11 @@ private fun DashboardContent(
     onRecordExpense: () -> Unit,
     onOpenManage: () -> Unit,
     onOpenOrder: (Long) -> Unit,
+    onOpenBackup: () -> Unit,
+    onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val user = LocalCurrentUser.current
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -91,10 +101,26 @@ private fun DashboardContent(
         item { DashboardHeader(onOpenManage = onOpenManage) }
 
         item {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "Signed in as ${user.name} · ${user.role.label}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(onClick = onSignOut) { Text("Switch user") }
+            }
+        }
+
+        if (state.backupReminder != null && user.can(Permission.SAVE_BACKUP)) {
+            item { BackupReminderCard(state.backupReminder, onOpenBackup) }
+        }
+
+        item {
             QuickActions(
                 onNewOrder = onNewOrder,
                 onAddStock = onAddStock,
-                onRecordExpense = onRecordExpense
+                onRecordExpense = onRecordExpense.takeIf { user.can(Permission.EXPENSES) }
             )
         }
 
@@ -204,7 +230,8 @@ private fun DashboardHeader(onOpenManage: () -> Unit) {
 private fun QuickActions(
     onNewOrder: () -> Unit,
     onAddStock: () -> Unit,
-    onRecordExpense: () -> Unit,
+    /** Null for people who may not record expenses; the tile is then left out. */
+    onRecordExpense: (() -> Unit)?,
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         QuickActionTile(
@@ -220,12 +247,37 @@ private fun QuickActions(
             onClick = onAddStock,
             modifier = Modifier.weight(1f)
         )
-        QuickActionTile(
-            label = "Expense",
-            icon = R.drawable.ic_nav_expenses,
-            onClick = onRecordExpense,
-            modifier = Modifier.weight(1f)
-        )
+        if (onRecordExpense != null) {
+            QuickActionTile(
+                label = "Expense",
+                icon = R.drawable.ic_nav_expenses,
+                onClick = onRecordExpense,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+/** Reminds people to save a backup; it disappears once one is saved. */
+@Composable
+private fun BackupReminderCard(message: String, onOpenBackup: () -> Unit) {
+    Surface(color = LocalCoffeeExtraColors.current.warning.copy(alpha = 0.14f), shape = MaterialTheme.shapes.medium) {
+        Row(
+            Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(painterResource(R.drawable.ic_warning), contentDescription = null, tint = LocalCoffeeExtraColors.current.warning)
+            Column(Modifier.weight(1f)) {
+                Text(message, style = MaterialTheme.typography.titleSmall)
+                Text(
+                    "If this phone is lost or reset, data that isn't backed up is gone.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            TextButton(onClick = onOpenBackup) { Text("Back up now") }
+        }
     }
 }
 
@@ -469,7 +521,9 @@ private fun DashboardScreenPreview() {
             onAddStock = {},
             onRecordExpense = {},
             onOpenManage = {},
-            onOpenOrder = {}
+            onOpenOrder = {},
+            onOpenBackup = {},
+            onSignOut = {}
         )
     }
 }

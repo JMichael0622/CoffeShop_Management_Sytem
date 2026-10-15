@@ -2,15 +2,18 @@ package com.project2.coffeeshoppos.ui.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.project2.coffeeshoppos.data.backup.BackupManager
 import com.project2.coffeeshoppos.data.repository.InventoryRepository
 import com.project2.coffeeshoppos.data.repository.LoyaltyRepository
 import com.project2.coffeeshoppos.data.repository.OrderRepository
 import com.project2.coffeeshoppos.data.repository.ReportRepository
 import com.project2.coffeeshoppos.data.repository.shortOrderNumber
+import com.project2.coffeeshoppos.domain.BackupReminder
 import com.project2.coffeeshoppos.domain.DateRange
 import com.project2.coffeeshoppos.domain.StockLevel
 import com.project2.coffeeshoppos.domain.formatQuantity
 import com.project2.coffeeshoppos.domain.stockLevel
+import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -33,6 +36,7 @@ class DashboardViewModel(
     inventoryRepository: InventoryRepository,
     orderRepository: OrderRepository,
     loyaltyRepository: LoyaltyRepository,
+    backupManager: BackupManager,
 ) : ViewModel() {
     /** Re-checks the date every minute, so a dashboard left open overnight rolls over to the new day. */
     private val today = flow {
@@ -42,12 +46,29 @@ class DashboardViewModel(
         }
     }.distinctUntilChanged()
 
+    /** Null until a backup is due; there is no reminder while the shop has no data to lose. */
+    private val backupReminder = combine(
+        backupManager.lastBackup,
+        backupManager.frequency,
+        orderRepository.observeOrderCount(),
+        inventoryRepository.observeIngredientCount(),
+        today,
+    ) { lastBackup, frequency, orders, ingredients, _ ->
+        val now = Instant.now()
+        when {
+            !BackupReminder.isDue(lastBackup, now, frequency, hasData = orders > 0 || ingredients > 0) -> null
+            lastBackup == null -> "You haven't saved a backup yet."
+            else -> "Your last backup was ${BackupReminder.ageLabel(lastBackup, now)}."
+        }
+    }
+
     val uiState: StateFlow<DashboardUiState> = combine(
         today.flatMapLatest { reportRepository.observeReport(DateRange.day(it)) },
         inventoryRepository.observeIngredients(),
         orderRepository.observeRecentOrders(limit = RECENT_ORDERS),
         today.flatMapLatest { loyaltyRepository.observeCustomersServedOn(it) },
-    ) { report, ingredients, recent, loyaltyCustomers ->
+        backupReminder,
+    ) { report, ingredients, recent, loyaltyCustomers, backupReminder ->
         val summary = report.summary
         val zone = ZoneId.systemDefault()
         val needingStock = ingredients
@@ -56,6 +77,7 @@ class DashboardViewModel(
         DashboardUiState(
             grossSalesCentavos = summary.grossSalesCentavos,
             completedOrders = summary.orderCount,
+            backupReminder = backupReminder,
             loyaltyCustomers = loyaltyCustomers,
             loyaltyRewardsCentavos = summary.loyaltyRewardsCentavos,
             discountsAndRefundsCentavos = summary.discountsCentavos + summary.loyaltyRewardsCentavos + summary.refundsCentavos,

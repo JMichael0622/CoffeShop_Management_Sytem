@@ -6,7 +6,19 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
+import com.project2.coffeeshoppos.R
+import com.project2.coffeeshoppos.domain.Permission
 import com.project2.coffeeshoppos.domain.RecipeTarget
+import com.project2.coffeeshoppos.ui.accounts.AccountsScreen
+import com.project2.coffeeshoppos.ui.auth.LocalCurrentUser
+import com.project2.coffeeshoppos.ui.components.CoffeeCard
+import com.project2.coffeeshoppos.ui.components.EmptyState
+import com.project2.coffeeshoppos.ui.components.SubScreenScaffold
 import com.project2.coffeeshoppos.ui.customers.CustomerDetailScreen
 import com.project2.coffeeshoppos.ui.customers.CustomersScreen
 import com.project2.coffeeshoppos.ui.customers.LoyaltySettingsScreen
@@ -33,7 +45,8 @@ import com.project2.coffeeshoppos.ui.reports.ReportsScreen
 
 /** The map of every screen in the app. New screens are added here as each phase is built. */
 @Composable
-fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) {
+fun AppNavHost(navController: NavHostController, onSignOut: () -> Unit, modifier: Modifier = Modifier) {
+    val back: () -> Unit = { navController.popBackStack() }
     val openRecipe = { target: RecipeTarget ->
         navController.navigate(
             when (target) {
@@ -53,7 +66,9 @@ fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) 
                 onAddStock = { navController.navigateToTab(TopLevelDestination.Inventory) },
                 onRecordExpense = { navController.navigateToTab(TopLevelDestination.Expenses) },
                 onOpenManage = { navController.navigate(ManageRoute) },
-                onOpenOrder = { id -> navController.navigate(OrderDetailRoute(id)) }
+                onOpenOrder = { id -> navController.navigate(OrderDetailRoute(id)) },
+                onOpenBackup = { navController.navigate(BackupRoute) },
+                onSignOut = onSignOut
             )
         }
         composable<PosRoute> {
@@ -71,14 +86,16 @@ fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) 
             )
         }
         composable<ExpensesRoute> {
+            Allowed(Permission.EXPENSES, back) {
             ExpensesScreen(
                 onAddExpense = { navController.navigate(ExpenseEditRoute()) },
                 onOpenExpense = { id -> navController.navigate(ExpenseEditRoute(expenseId = id)) },
                 onRecordReminder = { templateId -> navController.navigate(ExpenseEditRoute(templateId = templateId)) },
                 onOpenRecurring = { navController.navigate(RecurringExpensesRoute) }
             )
+            }
         }
-        composable<ReportsRoute> { ReportsScreen() }
+        composable<ReportsRoute> { Allowed(Permission.REPORTS, back) { ReportsScreen() } }
         composable<ManageRoute> {
             ManageScreen(
                 onBack = { navController.popBackStack() },
@@ -87,11 +104,14 @@ fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) 
                 onOpenRecipes = { navController.navigate(RecipesRoute) },
                 onOpenCustomers = { navController.navigate(CustomersRoute) },
                 onOpenLoyaltySettings = { navController.navigate(LoyaltySettingsRoute) },
+                onOpenAccounts = { navController.navigate(AccountsRoute) },
                 onOpenExport = { navController.navigate(ExportRoute) },
-                onOpenBackup = { navController.navigate(BackupRoute) }
+                onOpenBackup = { navController.navigate(BackupRoute) },
+                onSignOut = onSignOut
             )
         }
         composable<MenuRoute> {
+            Allowed(Permission.MENU, back) {
             MenuScreen(
                 onBack = { navController.popBackStack() },
                 onAddProduct = { navController.navigate(ProductEditRoute()) },
@@ -99,19 +119,24 @@ fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) 
                 onOpenCategories = { navController.navigate(CategoriesRoute) },
                 onOpenAddOns = { navController.navigate(AddOnsRoute) }
             )
+            }
         }
         composable<ProductEditRoute> {
+            Allowed(Permission.MENU, back) {
             ProductEditScreen(
                 onClose = { navController.popBackStack() },
                 onEditRecipe = { variationId -> openRecipe(RecipeTarget.Variation(variationId)) }
             )
+            }
         }
-        composable<CategoriesRoute> { CategoriesScreen(onBack = { navController.popBackStack() }) }
+        composable<CategoriesRoute> { Allowed(Permission.MENU, back) { CategoriesScreen(onBack = back) } }
         composable<AddOnsRoute> {
+            Allowed(Permission.MENU, back) {
             AddOnsScreen(
                 onBack = { navController.popBackStack() },
                 onEditRecipe = { addOnId -> openRecipe(RecipeTarget.AddOn(addOnId)) }
             )
+            }
         }
         composable<IngredientEditRoute> {
             IngredientEditScreen(
@@ -151,8 +176,8 @@ fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) 
                 onOpenCustomer = { id -> navController.navigate(CustomerDetailRoute(id)) }
             )
         }
-        composable<ExpenseEditRoute> { ExpenseEditScreen(onClose = { navController.popBackStack() }) }
-        composable<RecurringExpensesRoute> { RecurringExpensesScreen(onBack = { navController.popBackStack() }) }
+        composable<ExpenseEditRoute> { Allowed(Permission.EXPENSES, back) { ExpenseEditScreen(onClose = back) } }
+        composable<RecurringExpensesRoute> { Allowed(Permission.EXPENSES, back) { RecurringExpensesScreen(onBack = back) } }
         composable<ExportRoute> { ExportScreen(onBack = { navController.popBackStack() }) }
         composable<BackupRoute> { BackupScreen(onBack = { navController.popBackStack() }) }
         composable<CustomersRoute> {
@@ -168,7 +193,8 @@ fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) 
                 onOpenOrder = { id -> navController.navigate(OrderDetailRoute(id)) }
             )
         }
-        composable<LoyaltySettingsRoute> { LoyaltySettingsScreen(onBack = { navController.popBackStack() }) }
+        composable<LoyaltySettingsRoute> { Allowed(Permission.LOYALTY_SETTINGS, back) { LoyaltySettingsScreen(onBack = back) } }
+        composable<AccountsRoute> { Allowed(Permission.ACCOUNTS, back) { AccountsScreen(onBack = back) } }
     }
 }
 
@@ -176,6 +202,29 @@ fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) 
  * Switches tabs the standard Android way: each tab keeps its own scroll position, and pressing
  * Back from any tab returns to the dashboard instead of stepping through every tab visited.
  */
+/**
+ * Shows [content] only to people with [permission]. The menus already hide what someone can't
+ * use; this also stops them reaching it any other way.
+ */
+@Composable
+private fun Allowed(permission: Permission, onBack: () -> Unit, content: @Composable () -> Unit) {
+    if (LocalCurrentUser.current.can(permission)) {
+        content()
+    } else {
+        SubScreenScaffold(title = "Admin only", onBack = onBack) { innerPadding ->
+            Box(Modifier.fillMaxSize().padding(innerPadding).padding(16.dp)) {
+                CoffeeCard(Modifier.fillMaxWidth()) {
+                    EmptyState(
+                        icon = R.drawable.ic_person,
+                        title = "Admin only",
+                        message = "Your account can't open this. Ask an admin to sign in."
+                    )
+                }
+            }
+        }
+    }
+}
+
 fun NavHostController.navigateToTab(destination: TopLevelDestination) {
     navigate(destination.route) {
         popUpTo(graph.findStartDestination().id) { saveState = true }

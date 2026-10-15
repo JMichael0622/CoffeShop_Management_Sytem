@@ -22,6 +22,8 @@ data class DashboardUiState(
     val stockAlerts: List<StockAlert> = emptyList(),
     val bestSellers: List<BestSeller> = emptyList(),
     val recentOrders: List<RecentOrder> = emptyList(),
+    /** Set when a backup is due, e.g. "Your last backup was 9 days ago." */
+    val backupReminder: String? = null,
 )
 
 data class StockAlert(

@@ -6,6 +6,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -14,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SnackbarHostState
@@ -30,6 +33,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.project2.coffeeshoppos.R
 import com.project2.coffeeshoppos.data.backup.BackupInfo
+import com.project2.coffeeshoppos.domain.BackupFrequency
+import com.project2.coffeeshoppos.domain.Permission
+import com.project2.coffeeshoppos.ui.auth.LocalCurrentUser
 import com.project2.coffeeshoppos.ui.AppViewModelProvider
 import com.project2.coffeeshoppos.ui.components.CoffeeCard
 import com.project2.coffeeshoppos.ui.components.InfoBanner
@@ -43,6 +49,7 @@ import java.util.Locale
 private val WHEN = DateTimeFormatter.ofPattern("MMM d, yyyy 'at' h:mm a", Locale.ENGLISH)
 private fun Instant.local(): String = atZone(ZoneId.systemDefault()).format(WHEN)
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun BackupScreen(
     onBack: () -> Unit,
@@ -63,7 +70,8 @@ fun BackupScreen(
         if (state.restartToRestore) restartApp(context)
     }
 
-    SubScreenScaffold(title = "Backup & restore", onBack = onBack, snackbarHostState = snackbarHostState) { innerPadding ->
+    val canRestore = LocalCurrentUser.current.can(Permission.RESTORE_BACKUP)
+    SubScreenScaffold(title = if (canRestore) "Backup & restore" else "Backup", onBack = onBack, snackbarHostState = snackbarHostState) { innerPadding ->
         Column(
             Modifier.fillMaxSize().padding(innerPadding).verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -87,7 +95,7 @@ fun BackupScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        "Includes the menu, recipes, stock, orders, expenses and the audit log.",
+                        "Includes the menu, recipes, stock, orders, expenses, customers, accounts and the audit log.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -96,10 +104,25 @@ fun BackupScreen(
                         enabled = !state.isWorking,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)
                     ) { Text(if (state.isWorking) "Working…" else "Save backup") }
+                    Text("Remind me to back up", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 8.dp))
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        BackupFrequency.entries.forEach { frequency ->
+                            FilterChip(
+                                selected = state.frequency == frequency,
+                                onClick = { viewModel.onFrequency(frequency) },
+                                label = { Text(frequency.label) }
+                            )
+                        }
+                    }
+                    Text(
+                        "A reminder shows on the dashboard when a backup is due.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
 
-            CoffeeCard(Modifier.fillMaxWidth()) {
+            if (canRestore) CoffeeCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Restore from a backup", style = MaterialTheme.typography.titleMedium)
                     Text(
@@ -136,7 +159,8 @@ private fun ConfirmRestoreDialog(info: BackupInfo, onConfirm: () -> Unit, onDism
                 Text("• ${info.expenses} expenses")
                 Text(
                     "Everything currently in the app will be replaced and the app will restart. " +
-                        "Anything recorded after this backup was made will be lost.",
+                        "Anything recorded after this backup was made will be lost. Accounts and PINs also " +
+                        "come from the backup; an older backup without accounts asks you to create the admin again.",
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(top = 8.dp)
                 )

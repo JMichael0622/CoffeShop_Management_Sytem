@@ -17,4 +17,15 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    // Leaving the app for a while signs out, so an unattended phone is not left open.
+    override fun onStart() {
+        super.onStart()
+        (application as CoffeeShopApplication).container.sessionManager.onAppForegrounded()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        (application as CoffeeShopApplication).container.sessionManager.onAppBackgrounded()
+    }
 }

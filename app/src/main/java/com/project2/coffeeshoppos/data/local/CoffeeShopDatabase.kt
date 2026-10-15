@@ -7,6 +7,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.room.migration.Migration
+import com.project2.coffeeshoppos.data.local.dao.AccountDao
 import com.project2.coffeeshoppos.data.local.dao.AuditDao
 import com.project2.coffeeshoppos.data.local.dao.CatalogDao
 import com.project2.coffeeshoppos.data.local.dao.ExpenseDao
@@ -35,6 +36,7 @@ import com.project2.coffeeshoppos.data.local.entity.ProductVariationEntity
 import com.project2.coffeeshoppos.data.local.entity.PurchaseEntity
 import com.project2.coffeeshoppos.data.local.entity.RecurringExpenseTemplateEntity
 import com.project2.coffeeshoppos.data.local.entity.RefundEntity
+import com.project2.coffeeshoppos.data.local.entity.UserEntity
 import com.project2.coffeeshoppos.data.local.entity.VariationRecipeItemEntity
 
 /**
@@ -49,6 +51,7 @@ import com.project2.coffeeshoppos.data.local.entity.VariationRecipeItemEntity
  * 1. First release.
  * 2. Loyalty card: customers, loyalty_entries, loyalty_settings; orders.customerId and
  *    orders.loyaltyRewardCentavos; categories.earnsStamps.
+ * 3. Admin and staff accounts: users.
  */
 @Database(
     entities = [
@@ -73,11 +76,13 @@ import com.project2.coffeeshoppos.data.local.entity.VariationRecipeItemEntity
         CustomerEntity::class,
         LoyaltyEntryEntity::class,
         LoyaltySettingsEntity::class,
+        UserEntity::class,
     ],
     version = CoffeeShopDatabase.VERSION,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
+        AutoMigration(from = 2, to = 3),
     ]
 )
 @TypeConverters(Converters::class)
@@ -90,9 +95,10 @@ abstract class CoffeeShopDatabase : RoomDatabase() {
     abstract fun reportDao(): ReportDao
     abstract fun exportDao(): ExportDao
     abstract fun loyaltyDao(): LoyaltyDao
+    abstract fun accountDao(): AccountDao
 
     companion object {
-        const val VERSION = 2
+        const val VERSION = 3
         const val FILE_NAME = "coffee_shop.db"
 
         /** Upgrades from older database versions, added as the schema evolves. */

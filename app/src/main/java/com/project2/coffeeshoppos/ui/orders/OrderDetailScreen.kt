@@ -40,6 +40,8 @@ import com.project2.coffeeshoppos.data.repository.OrderDetail
 import com.project2.coffeeshoppos.data.repository.OrderLineDetail
 import com.project2.coffeeshoppos.data.repository.shortOrderNumber
 import com.project2.coffeeshoppos.domain.OrderStatus
+import com.project2.coffeeshoppos.domain.Permission
+import com.project2.coffeeshoppos.ui.auth.LocalCurrentUser
 import com.project2.coffeeshoppos.domain.isActive
 import com.project2.coffeeshoppos.ui.AppViewModelProvider
 import com.project2.coffeeshoppos.ui.components.CoffeeCard
@@ -264,6 +266,7 @@ private fun Actions(
     onCancel: () -> Unit,
     onRefund: () -> Unit,
 ) {
+    val canCancel = LocalCurrentUser.current.can(Permission.CANCEL_AND_REFUND)
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (status == OrderStatus.PENDING) {
             OutlinedButton(onClick = onStart, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
@@ -274,14 +277,23 @@ private fun Actions(
             Button(onClick = onComplete, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
                 Text("Complete (handed over)")
             }
-            OutlinedButton(onClick = onCancel, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
-                Text("Cancel order", color = MaterialTheme.colorScheme.error)
+            if (canCancel) {
+                OutlinedButton(onClick = onCancel, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                    Text("Cancel order", color = MaterialTheme.colorScheme.error)
+                }
             }
         }
-        if (status == OrderStatus.COMPLETED) {
+        if (status == OrderStatus.COMPLETED && canCancel) {
             OutlinedButton(onClick = onRefund, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
                 Text("Refund order", color = MaterialTheme.colorScheme.error)
             }
+        }
+        if (!canCancel && (status.isActive || status == OrderStatus.COMPLETED)) {
+            Text(
+                "Only an admin can cancel or refund orders.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

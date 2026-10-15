@@ -43,6 +43,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.project2.coffeeshoppos.R
 import com.project2.coffeeshoppos.domain.MeasureUnit
+import com.project2.coffeeshoppos.domain.Permission
+import com.project2.coffeeshoppos.ui.auth.LocalCurrentUser
 import com.project2.coffeeshoppos.ui.AppViewModelProvider
 import com.project2.coffeeshoppos.ui.components.CoffeeCard
 import com.project2.coffeeshoppos.ui.components.ConfirmDialog
@@ -112,7 +114,7 @@ fun IngredientEditScreen(
                 }
                 DetailsSection(state, viewModel)
                 if (state.isNew) OpeningStockSection(state, viewModel)
-                if (!state.isNew && !state.isArchived) {
+                if (!state.isNew && !state.isArchived && LocalCurrentUser.current.can(Permission.CORRECT_COST)) {
                     CostSection(state.averageCostLabel, onCorrectCost = {
                         // Leaving would lose unsaved edits, so ask for them to be saved first.
                         if (state.hasUnsavedChanges) viewModel.showMessage("Save your changes first, then correct the cost")

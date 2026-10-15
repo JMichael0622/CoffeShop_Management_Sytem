@@ -3,6 +3,7 @@ package com.project2.coffeeshoppos.data.repository
 import com.project2.coffeeshoppos.data.local.CoffeeShopDatabase
 import com.project2.coffeeshoppos.data.local.entity.AuditRecordEntity
 import com.project2.coffeeshoppos.domain.AuditAction
+import com.project2.coffeeshoppos.domain.CurrentUser
 import java.time.Clock
 import kotlinx.coroutines.flow.Flow
 
@@ -21,13 +22,19 @@ object AuditEntityType {
     const val RECURRING_EXPENSE = "recurring_expense"
     const val CUSTOMER = "customer"
     const val LOYALTY_SETTINGS = "loyalty_settings"
+    const val ACCOUNT = "account"
 }
 
 /**
  * Writes the audit trail. Call [record] inside the same database transaction as the change
  * it describes, so the change and its audit record are saved together or not at all.
  */
-class AuditRepository(private val db: CoffeeShopDatabase, private val clock: Clock) {
+class AuditRepository(
+    private val db: CoffeeShopDatabase,
+    private val clock: Clock,
+    /** Who is signed in, so each record says who made the change. */
+    private val actor: () -> CurrentUser? = { null },
+) {
     private val dao = db.auditDao()
 
     suspend fun record(
@@ -43,7 +50,10 @@ class AuditRepository(private val db: CoffeeShopDatabase, private val clock: Clo
                 entityId = entityId,
                 action = action,
                 summary = summary,
-                details = details,
+                details = listOfNotNull(
+                    details.ifEmpty { null },
+                    actor()?.let { "By ${it.name} (${it.role.label})" }
+                ).joinToString("\n"),
                 createdAt = clock.instant()
             )
         )

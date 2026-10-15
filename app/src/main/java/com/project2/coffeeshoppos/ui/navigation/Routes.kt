@@ -2,6 +2,7 @@ package com.project2.coffeeshoppos.ui.navigation
 
 import androidx.annotation.DrawableRes
 import com.project2.coffeeshoppos.R
+import com.project2.coffeeshoppos.domain.Permission
 import kotlinx.serialization.Serializable
 
 // Every screen has a route. Routes are Kotlin objects/classes instead of strings, so a typo is
@@ -53,11 +54,15 @@ import kotlinx.serialization.Serializable
 @Serializable data class CustomerDetailRoute(val customerId: Long)
 @Serializable object LoyaltySettingsRoute
 
-/** The five tabs in the bottom navigation bar. */
+// Accounts (1.2)
+@Serializable object AccountsRoute
+
+/** The tabs in the bottom navigation bar. A tab with a [permission] is only shown to people who have it. */
 enum class TopLevelDestination(
     val route: Any,
     val label: String,
     @param:DrawableRes val icon: Int,
+    val permission: Permission? = null,
 ) {
     Dashboard(
         route = DashboardRoute,
@@ -77,11 +82,13 @@ enum class TopLevelDestination(
     Expenses(
         route = ExpensesRoute,
         label = "Expenses",
-        icon = R.drawable.ic_nav_expenses
+        icon = R.drawable.ic_nav_expenses,
+        permission = Permission.EXPENSES
     ),
     Reports(
         route = ReportsRoute,
         label = "Reports",
-        icon = R.drawable.ic_nav_reports
+        icon = R.drawable.ic_nav_reports,
+        permission = Permission.REPORTS
     ),
 }

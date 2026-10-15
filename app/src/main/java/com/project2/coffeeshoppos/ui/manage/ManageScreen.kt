@@ -32,7 +32,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.project2.coffeeshoppos.R
+import com.project2.coffeeshoppos.domain.Permission
 import com.project2.coffeeshoppos.ui.AppViewModelProvider
+import com.project2.coffeeshoppos.ui.auth.LocalCurrentUser
 import com.project2.coffeeshoppos.ui.components.CoffeeCard
 import com.project2.coffeeshoppos.ui.components.IconBadge
 import com.project2.coffeeshoppos.ui.components.SectionHeader
@@ -47,12 +49,15 @@ fun ManageScreen(
     onOpenRecipes: () -> Unit,
     onOpenCustomers: () -> Unit,
     onOpenLoyaltySettings: () -> Unit,
+    onOpenAccounts: () -> Unit,
     onOpenExport: () -> Unit,
     onOpenBackup: () -> Unit,
+    onSignOut: () -> Unit,
     viewModel: ManageViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val status by viewModel.databaseStatus.collectAsStateWithLifecycle()
-    val menuItems = listOf(
+    val user = LocalCurrentUser.current
+    val menuItems = if (!user.can(Permission.MENU)) emptyList() else listOf(
         ManageItem(
             "Products & categories", "Menu items, sizes, prices, availability", R.drawable.ic_cafe,
             onClick = onOpenMenu
@@ -62,13 +67,22 @@ fun ManageScreen(
     val inventoryItems = listOf(
         ManageItem("Recipes", "Ingredients used by each product", R.drawable.ic_nav_inventory, onClick = onOpenRecipes),
     )
-    val customerItems = listOf(
+    val customerItems = listOfNotNull(
         ManageItem("Customers", "Loyalty customers and their stamps", R.drawable.ic_person, onClick = onOpenCustomers),
-        ManageItem("Loyalty card", "Stamps for a free drink and its limit", R.drawable.ic_star, onClick = onOpenLoyaltySettings),
+        ManageItem("Loyalty card", "Stamps for a free drink and its limit", R.drawable.ic_star, onClick = onOpenLoyaltySettings)
+            .takeIf { user.can(Permission.LOYALTY_SETTINGS) },
     )
-    val dataItems = listOf(
+    val dataItems = listOfNotNull(
         ManageItem("Export reports", "Save CSV or PDF files", R.drawable.ic_nav_reports, onClick = onOpenExport),
-        ManageItem("Backup & restore", "Save a copy of all shop data", R.drawable.ic_receipt, onClick = onOpenBackup),
+        ManageItem(
+            if (user.can(Permission.RESTORE_BACKUP)) "Backup & restore" else "Backup",
+            "Save a copy of all shop data", R.drawable.ic_receipt, onClick = onOpenBackup
+        ),
+    )
+    val accountItems = listOfNotNull(
+        ManageItem("Accounts", "Admin and staff sign-ins", R.drawable.ic_person, onClick = onOpenAccounts)
+            .takeIf { user.can(Permission.ACCOUNTS) },
+        ManageItem("Sign out", "Signed in as ${user.name} (${user.role.label})", R.drawable.ic_arrow_back, onClick = onSignOut),
     )
     ManageContent(
         status = status,
@@ -76,6 +90,7 @@ fun ManageScreen(
         inventoryItems = inventoryItems,
         customerItems = customerItems,
         dataItems = dataItems,
+        accountItems = accountItems,
         onBack = onBack
     )
 }
@@ -96,6 +111,7 @@ private fun ManageContent(
     inventoryItems: List<ManageItem>,
     customerItems: List<ManageItem>,
     dataItems: List<ManageItem>,
+    accountItems: List<ManageItem>,
     onBack: () -> Unit,
 ) {
     Scaffold(
@@ -121,14 +137,18 @@ private fun ManageContent(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            item { SectionHeader("Menu") }
-            item { ManageGroup(menuItems) }
+            if (menuItems.isNotEmpty()) {
+                item { SectionHeader("Menu") }
+                item { ManageGroup(menuItems) }
+            }
             item { SectionHeader("Inventory") }
             item { ManageGroup(inventoryItems) }
             item { SectionHeader("Customers") }
             item { ManageGroup(customerItems) }
             item { SectionHeader("Data") }
             item { ManageGroup(dataItems) }
+            item { SectionHeader("Account") }
+            item { ManageGroup(accountItems) }
             item { SectionHeader("Database") }
             item { DatabaseStatusCard(status) }
         }
@@ -232,6 +252,7 @@ private fun ManageContentPreview() {
             menuItems = listOf(ManageItem("Products & categories", "Menu items", R.drawable.ic_cafe, onClick = {})),
             inventoryItems = listOf(ManageItem("Recipes", "Ingredients", R.drawable.ic_nav_inventory, onClick = {})),
             customerItems = listOf(ManageItem("Customers", "Loyalty", R.drawable.ic_person, onClick = {})),
+            accountItems = listOf(ManageItem("Sign out", "Signed in as Ana (Admin)", R.drawable.ic_arrow_back, onClick = {})),
             dataItems = listOf(ManageItem("Backup & restore", "Save a copy", R.drawable.ic_receipt, onClick = {})),
             onBack = {}
         )

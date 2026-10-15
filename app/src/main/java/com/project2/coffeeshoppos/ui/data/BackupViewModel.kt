@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.project2.coffeeshoppos.data.backup.BackupInfo
 import com.project2.coffeeshoppos.data.backup.BackupManager
+import com.project2.coffeeshoppos.domain.BackupFrequency
 import java.time.Instant
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,6 +16,7 @@ import kotlinx.coroutines.launch
 data class BackupUiState(
     val lastBackupAt: Instant? = null,
     val lastRestoreAt: Instant? = null,
+    val frequency: BackupFrequency = BackupFrequency.WEEKLY,
     val isWorking: Boolean = false,
     /** A checked backup waiting for the owner to confirm the restore. */
     val candidate: BackupInfo? = null,
@@ -24,11 +26,16 @@ data class BackupUiState(
 )
 
 class BackupViewModel(private val backups: BackupManager) : ViewModel() {
-    private val _uiState = MutableStateFlow(BackupUiState(backups.lastBackupAt, backups.lastRestoreAt))
+    private val _uiState = MutableStateFlow(BackupUiState(backups.lastBackupAt, backups.lastRestoreAt, backups.frequency.value))
     val uiState: StateFlow<BackupUiState> = _uiState.asStateFlow()
 
     fun suggestedFileName(): String = backups.suggestedFileName()
     fun onMessageShown() = _uiState.update { it.copy(message = null) }
+
+    fun onFrequency(value: BackupFrequency) {
+        backups.setFrequency(value)
+        _uiState.update { it.copy(frequency = value) }
+    }
 
     /** Called with the file chosen in the "save as" picker; null means they backed out. */
     fun backupTo(uri: Uri?) {
