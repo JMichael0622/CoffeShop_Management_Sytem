@@ -8,6 +8,7 @@ import com.project2.coffeeshoppos.data.repository.InventoryRepository
 import com.project2.coffeeshoppos.domain.IngredientDraft
 import com.project2.coffeeshoppos.domain.MeasureUnit
 import com.project2.coffeeshoppos.domain.UserFacingException
+import com.project2.coffeeshoppos.domain.formatUnitCost
 import com.project2.coffeeshoppos.domain.milliToInput
 import com.project2.coffeeshoppos.domain.parseQuantityMilli
 import com.project2.coffeeshoppos.ui.navigation.IngredientEditRoute
@@ -48,6 +49,8 @@ data class IngredientEditUiState(
     val savedForm: IngredientForm = IngredientForm(),
     val canChangeUnit: Boolean = true,
     val isArchived: Boolean = false,
+    /** e.g. "₱900.00/kg", or null for a new ingredient or one with no cost yet. */
+    val averageCostLabel: String? = null,
     val errors: IngredientFormErrors = IngredientFormErrors(),
     val isSaving: Boolean = false,
     val message: String? = null,
@@ -60,7 +63,7 @@ class IngredientEditViewModel(
     savedStateHandle: SavedStateHandle,
     private val repository: InventoryRepository,
 ) : ViewModel() {
-    private val ingredientId = savedStateHandle.toRoute<IngredientEditRoute>().ingredientId
+    val ingredientId = savedStateHandle.toRoute<IngredientEditRoute>().ingredientId
     private var showErrors = false
 
     private val _uiState = MutableStateFlow(IngredientEditUiState(isNew = ingredientId == 0L))
@@ -95,7 +98,9 @@ class IngredientEditViewModel(
                 form = form,
                 savedForm = form,
                 canChangeUnit = repository.canChangeUnit(ingredientId),
-                isArchived = ingredient.isArchived
+                isArchived = ingredient.isArchived,
+                averageCostLabel = ingredient.averageCostCentavosPerUnit.takeIf { cost -> cost.signum() > 0 }
+                    ?.let { cost -> formatUnitCost(cost, unit) }
             )
         }
     }
@@ -115,6 +120,7 @@ class IngredientEditViewModel(
     fun onOpeningUnitChange(unit: MeasureUnit) = updateForm { it.copy(openingUnit = unit) }
     fun onOpeningCostChange(value: String) = updateForm { it.copy(openingCostText = value) }
     fun onMessageShown() = _uiState.update { it.copy(message = null) }
+    fun showMessage(text: String) = _uiState.update { it.copy(message = text) }
 
     /** Switching between weight, volume and count resets the quantity units to match. */
     fun onBaseUnitChange(unit: MeasureUnit) {

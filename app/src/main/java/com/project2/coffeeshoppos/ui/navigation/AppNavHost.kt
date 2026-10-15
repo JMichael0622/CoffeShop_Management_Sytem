@@ -113,7 +113,17 @@ fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) 
                 onEditRecipe = { addOnId -> openRecipe(RecipeTarget.AddOn(addOnId)) }
             )
         }
-        composable<IngredientEditRoute> { IngredientEditScreen(onClose = { navController.popBackStack() }) }
+        composable<IngredientEditRoute> {
+            IngredientEditScreen(
+                onClose = { navController.popBackStack() },
+                // Replace the ingredient page underneath with one that opens the correction dialog.
+                onCorrectCost = { id ->
+                    navController.navigate(IngredientDetailRoute(id, openCostCorrection = true)) {
+                        popUpTo<IngredientDetailRoute> { inclusive = true }
+                    }
+                }
+            )
+        }
         composable<IngredientDetailRoute> {
             IngredientDetailScreen(
                 onBack = { navController.popBackStack() },

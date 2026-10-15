@@ -73,8 +73,8 @@ fun RecipesScreen(
                 item {
                     InfoBanner(
                         icon = R.drawable.ic_warning,
-                        text = "${state.missingCount} " + (if (state.missingCount == 1) "size has" else "sizes have") +
-                            " no recipe yet, so selling it will not use any stock."
+                        text = "${state.missingCount} " + (if (state.missingCount == 1) "size or add-on has" else "sizes and add-ons have") +
+                            " no recipe yet, so selling them uses no stock. Look for \"No recipe\" below."
                     )
                 }
             }

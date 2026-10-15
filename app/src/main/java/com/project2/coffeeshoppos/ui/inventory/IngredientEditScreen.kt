@@ -55,6 +55,7 @@ import com.project2.coffeeshoppos.ui.components.SubScreenScaffold
 @Composable
 fun IngredientEditScreen(
     onClose: () -> Unit,
+    onCorrectCost: (ingredientId: Long) -> Unit,
     viewModel: IngredientEditViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -111,6 +112,13 @@ fun IngredientEditScreen(
                 }
                 DetailsSection(state, viewModel)
                 if (state.isNew) OpeningStockSection(state, viewModel)
+                if (!state.isNew && !state.isArchived) {
+                    CostSection(state.averageCostLabel, onCorrectCost = {
+                        // Leaving would lose unsaved edits, so ask for them to be saved first.
+                        if (state.hasUnsavedChanges) viewModel.showMessage("Save your changes first, then correct the cost")
+                        else viewModel.ingredientId.let(onCorrectCost)
+                    })
+                }
                 Button(
                     onClick = viewModel::save,
                     enabled = !state.isSaving,
@@ -157,6 +165,24 @@ fun IngredientEditScreen(
 }
 
 @OptIn(ExperimentalLayoutApi::class)
+/** The cost is set by purchases, so here it is only shown, with a way to fix a mistake. */
+@Composable
+private fun CostSection(averageCostLabel: String?, onCorrectCost: () -> Unit) {
+    CoffeeCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("Average cost", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(averageCostLabel ?: "Not set yet", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "Set automatically from your purchases. To change it for a new supplier price, record a purchase. " +
+                    "If it was entered wrong, correct it.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            TextButton(onClick = onCorrectCost) { Text("Correct cost") }
+        }
+    }
+}
+
 @Composable
 private fun DetailsSection(state: IngredientEditUiState, viewModel: IngredientEditViewModel) {
     val form = state.form

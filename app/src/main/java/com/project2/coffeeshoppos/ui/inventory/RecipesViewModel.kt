@@ -24,7 +24,8 @@ class RecipesViewModel(repository: InventoryRepository) : ViewModel() {
             isLoading = false,
             products = overview.products,
             addOns = overview.addOns,
-            missingCount = overview.products.sumOf { product -> product.sizes.count { it.lineCount == 0 } }
+            missingCount = overview.products.sumOf { product -> product.sizes.count { it.lineCount == 0 } } +
+                overview.addOns.count { it.lineCount == 0 }
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RecipesUiState())
 }

@@ -29,6 +29,8 @@ data class AddOnsUiState(
     val isLoading: Boolean = true,
     val active: List<AddOnEntity> = emptyList(),
     val archived: List<AddOnEntity> = emptyList(),
+    /** Ingredients in each add-on's recipe; an add-on not in the map has no recipe and uses no stock. */
+    val recipeCounts: Map<Long, Int> = emptyMap(),
     val dialog: AddOnDialogState? = null,
     val message: String? = null,
 )
@@ -38,12 +40,13 @@ class AddOnsViewModel(private val repository: CatalogRepository) : ViewModel() {
     private val message = MutableStateFlow<String?>(null)
 
     val uiState: StateFlow<AddOnsUiState> = combine(
-        repository.observeAllAddOns(), dialog, message
-    ) { addOns, dialog, message ->
+        repository.observeAllAddOns(), repository.observeAddOnRecipeCounts(), dialog, message
+    ) { addOns, recipeCounts, dialog, message ->
         AddOnsUiState(
             isLoading = false,
             active = addOns.filterNot { it.isArchived },
             archived = addOns.filter { it.isArchived },
+            recipeCounts = recipeCounts,
             dialog = dialog,
             message = message
         )
@@ -81,7 +84,7 @@ class AddOnsViewModel(private val repository: CatalogRepository) : ViewModel() {
                     )
                 )
                 dialog.value = null
-                if (current.addOn == null) message.value = "Add-on created"
+                if (current.addOn == null) message.value = "Add-on created. Tap it, then Edit recipe, so it uses stock."
             } catch (e: Exception) {
                 dialog.update { it?.copy(isSaving = false, error = e.message ?: "Could not save") }
             }

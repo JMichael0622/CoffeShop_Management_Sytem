@@ -43,6 +43,7 @@ import com.project2.coffeeshoppos.ui.components.CoffeeCard
 import com.project2.coffeeshoppos.ui.components.ConfirmDialog
 import com.project2.coffeeshoppos.ui.components.EmptyState
 import com.project2.coffeeshoppos.ui.components.FormDialog
+import com.project2.coffeeshoppos.ui.components.InfoBanner
 import com.project2.coffeeshoppos.ui.components.MessageEffect
 import com.project2.coffeeshoppos.ui.components.SectionHeader
 import com.project2.coffeeshoppos.ui.components.StatusChip
@@ -83,10 +84,20 @@ fun AddOnsScreen(
             item {
                 Text(
                     "Extras like an extra shot or oat milk. Choose which products offer each add-on " +
-                        "in the product editor.",
+                        "in the product editor. Tap an add-on to set its recipe.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+            val missingRecipes = state.active.count { it.id !in state.recipeCounts }
+            if (missingRecipes > 0) {
+                item {
+                    InfoBanner(
+                        icon = R.drawable.ic_warning,
+                        text = "$missingRecipes " + (if (missingRecipes == 1) "add-on has" else "add-ons have") +
+                            " no recipe yet, so selling it uses no stock and costs ₱0."
+                    )
+                }
             }
             item {
                 CoffeeCard(Modifier.fillMaxWidth()) {
@@ -102,6 +113,7 @@ fun AddOnsScreen(
                                 if (index > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                                 AddOnRow(
                                     addOn = addOn,
+                                    recipeCount = state.recipeCounts[addOn.id] ?: 0,
                                     onClick = { viewModel.openEdit(addOn) },
                                     onAvailableChange = { viewModel.setAvailable(addOn, it) }
                                 )
@@ -201,7 +213,7 @@ fun AddOnsScreen(
 }
 
 @Composable
-private fun AddOnRow(addOn: AddOnEntity, onClick: () -> Unit, onAvailableChange: (Boolean) -> Unit) {
+private fun AddOnRow(addOn: AddOnEntity, recipeCount: Int, onClick: () -> Unit, onAvailableChange: (Boolean) -> Unit) {
     Row(
         modifier = Modifier
             .clickable(onClick = onClick)
@@ -213,10 +225,12 @@ private fun AddOnRow(addOn: AddOnEntity, onClick: () -> Unit, onAvailableChange:
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(addOn.name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
-                "+${formatPeso(addOn.priceCentavos)}",
+                "+${formatPeso(addOn.priceCentavos)}" +
+                    if (recipeCount > 0) " · $recipeCount " + (if (recipeCount == 1) "ingredient" else "ingredients") else "",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            if (recipeCount == 0) StatusChip("No recipe", color = LocalCoffeeExtraColors.current.warning)
             if (!addOn.isAvailable) StatusChip("Unavailable", color = LocalCoffeeExtraColors.current.warning)
         }
         Switch(

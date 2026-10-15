@@ -20,6 +20,7 @@ import com.project2.coffeeshoppos.util.formatPeso
 import java.time.Clock
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 
 /** A product as loaded into the editor: only its active (non-archived) sizes are included. */
 data class ProductEditData(
@@ -50,6 +51,10 @@ class CatalogRepository(
     fun observeProductCount(): Flow<Int> = dao.observeActiveProductCount()
     fun observeActiveAddOns(): Flow<List<AddOnEntity>> = dao.observeActiveAddOns()
     fun observeAllAddOns(): Flow<List<AddOnEntity>> = dao.observeAllAddOns()
+
+    /** How many ingredients each add-on's recipe has. Add-ons missing from the map have no recipe. */
+    fun observeAddOnRecipeCounts(): Flow<Map<Long, Int>> =
+        dao.observeAllAddOnRecipeItems().map { items -> items.groupingBy { it.addOnId }.eachCount() }
 
     /** Every product (archived too) with its category name and price range. */
     fun observeProductSummaries(): Flow<List<ProductSummary>> = combine(

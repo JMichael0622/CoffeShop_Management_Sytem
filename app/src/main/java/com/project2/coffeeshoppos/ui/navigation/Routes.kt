@@ -28,7 +28,8 @@ import kotlinx.serialization.Serializable
 // Inventory (Phase 4)
 /** Ingredient editor. ingredientId = 0 creates a new ingredient. */
 @Serializable data class IngredientEditRoute(val ingredientId: Long = 0L)
-@Serializable data class IngredientDetailRoute(val ingredientId: Long)
+/** [openCostCorrection] opens the "Correct cost" dialog straight away (from Edit ingredient). */
+@Serializable data class IngredientDetailRoute(val ingredientId: Long, val openCostCorrection: Boolean = false)
 @Serializable object RecipesRoute
 
 /** Recipe editor for exactly one of: a product size (variationId) or an add-on (addOnId). */

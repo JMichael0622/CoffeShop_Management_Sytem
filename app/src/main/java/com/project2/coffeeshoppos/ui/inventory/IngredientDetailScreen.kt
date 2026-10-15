@@ -27,7 +27,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -201,8 +200,8 @@ private fun StockActions(onAction: (StockAction) -> Unit) {
                 Text("Stock count")
             }
         }
-        TextButton(onClick = { onAction(StockAction.CORRECT_COST) }, modifier = Modifier.fillMaxWidth()) {
-            Text("Cost entered wrong? Correct cost")
+        OutlinedButton(onClick = { onAction(StockAction.CORRECT_COST) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+            Text("Correct cost")
         }
     }
 }

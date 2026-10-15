@@ -23,6 +23,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -64,7 +66,8 @@ class IngredientDetailViewModel(
     private val repository: InventoryRepository,
     private val clock: Clock,
 ) : ViewModel() {
-    private val ingredientId = savedStateHandle.toRoute<IngredientDetailRoute>().ingredientId
+    private val route = savedStateHandle.toRoute<IngredientDetailRoute>()
+    private val ingredientId = route.ingredientId
     private val dialog = MutableStateFlow<StockDialogState?>(null)
     private val message = MutableStateFlow<String?>(null)
 
@@ -86,8 +89,22 @@ class IngredientDetailViewModel(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), IngredientDetailUiState())
 
+    init {
+        // Opened from Edit ingredient's "Correct cost": show the dialog once, not again after rotation.
+        if (route.openCostCorrection && savedStateHandle.get<Boolean>(KEY_COST_DIALOG_SHOWN) != true) {
+            savedStateHandle[KEY_COST_DIALOG_SHOWN] = true
+            viewModelScope.launch {
+                val ingredient = repository.observeIngredient(ingredientId).filterNotNull().first()
+                if (!ingredient.isArchived) openDialog(StockAction.CORRECT_COST, ingredient)
+            }
+        }
+    }
+
     fun openDialog(action: StockAction) {
-        val ingredient = uiState.value.ingredient ?: return
+        openDialog(action, uiState.value.ingredient ?: return)
+    }
+
+    private fun openDialog(action: StockAction, ingredient: IngredientEntity) {
         // Purchases are usually in big units (kg, L); wastage and counts often in small ones.
         val unit = if (action == StockAction.PURCHASE) ingredient.baseUnit.displayUnit else ingredient.baseUnit
         // A cost correction starts from today's cost, so a typo only needs a small fix.
@@ -202,5 +219,9 @@ class IngredientDetailViewModel(
                 dialog.update { it?.copy(isSaving = false, error = e.message ?: "Could not save") }
             }
         }
+    }
+
+    private companion object {
+        const val KEY_COST_DIALOG_SHOWN = "cost_dialog_shown"
     }
 }
